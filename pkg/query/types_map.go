@@ -7,6 +7,69 @@ import (
 )
 
 // Keys returns a new slice containing the set of map keys. The order is unspecified.
+func (m ConstDeclMap) Keys() (keys []string) {
+	for name := range m {
+		keys = append(keys, name)
+	}
+
+	return
+}
+
+// Values returns a new slice containing the set of map values. The order is unspecified.
+func (m ConstDeclMap) Values() (values []*ConstDecl) {
+	for _, value := range m {
+		values = append(values, value)
+	}
+
+	return
+}
+
+// Contains reports whether key is within map.
+func (m ConstDeclMap) Contains(key string) bool {
+	_, found := m[key]
+
+	return found
+}
+
+// Clone returns a shadow copy of map.
+func (m ConstDeclMap) Clone() ConstDeclMap {
+	cloned := make(ConstDeclMap)
+
+	for key, value := range m {
+		cloned[key] = value
+	}
+
+	return cloned
+}
+
+// Filter filters the map to only include elements for which filter returns true.
+func (m ConstDeclMap) Filter(filter func(key string, value *ConstDecl) bool) ConstDeclMap {
+	filtered := make(ConstDeclMap)
+
+	for key, value := range m {
+		if filter(key, value) {
+			filtered[key] = value
+		}
+	}
+
+	return filtered
+}
+
+// WithPrefix filters the map to only include elements for which contains prefix.
+func (m ConstDeclMap) WithPrefix(prefix string) ConstDeclMap {
+	return m.Filter(func(key string, value *ConstDecl) bool {
+		return strings.HasPrefix(key, prefix)
+	})
+}
+
+// WithSuffix filters the map to only include elements for which contains suffix.
+func (m ConstDeclMap) WithSuffix(suffix string) ConstDeclMap {
+	return m.Filter(func(key string, value *ConstDecl) bool {
+		return strings.HasSuffix(key, suffix)
+	})
+}
+
+// Keys returns a new slice containing the set of map keys. The order is unspecified.
 func (m FieldMap) Keys() (keys []string) {
 	for name := range m {
 		keys = append(keys, name)
@@ -70,7 +133,7 @@ func (m FieldMap) WithSuffix(suffix string) FieldMap {
 }
 
 // Keys returns a new slice containing the set of map keys. The order is unspecified.
-func (m FileMap) Keys() (keys []string) {
+func (m FuncDeclMap) Keys() (keys []string) {
 	for name := range m {
 		keys = append(keys, name)
 	}
@@ -79,7 +142,7 @@ func (m FileMap) Keys() (keys []string) {
 }
 
 // Values returns a new slice containing the set of map values. The order is unspecified.
-func (m FileMap) Values() (values []*File) {
+func (m FuncDeclMap) Values() (values []*FuncDecl) {
 	for _, value := range m {
 		values = append(values, value)
 	}
@@ -88,15 +151,15 @@ func (m FileMap) Values() (values []*File) {
 }
 
 // Contains reports whether key is within map.
-func (m FileMap) Contains(key string) bool {
+func (m FuncDeclMap) Contains(key string) bool {
 	_, found := m[key]
 
 	return found
 }
 
 // Clone returns a shadow copy of map.
-func (m FileMap) Clone() FileMap {
-	cloned := make(FileMap)
+func (m FuncDeclMap) Clone() FuncDeclMap {
+	cloned := make(FuncDeclMap)
 
 	for key, value := range m {
 		cloned[key] = value
@@ -106,8 +169,8 @@ func (m FileMap) Clone() FileMap {
 }
 
 // Filter filters the map to only include elements for which filter returns true.
-func (m FileMap) Filter(filter func(key string, value *File) bool) FileMap {
-	filtered := make(FileMap)
+func (m FuncDeclMap) Filter(filter func(key string, value *FuncDecl) bool) FuncDeclMap {
+	filtered := make(FuncDeclMap)
 
 	for key, value := range m {
 		if filter(key, value) {
@@ -119,15 +182,78 @@ func (m FileMap) Filter(filter func(key string, value *File) bool) FileMap {
 }
 
 // WithPrefix filters the map to only include elements for which contains prefix.
-func (m FileMap) WithPrefix(prefix string) FileMap {
-	return m.Filter(func(key string, value *File) bool {
+func (m FuncDeclMap) WithPrefix(prefix string) FuncDeclMap {
+	return m.Filter(func(key string, value *FuncDecl) bool {
 		return strings.HasPrefix(key, prefix)
 	})
 }
 
 // WithSuffix filters the map to only include elements for which contains suffix.
-func (m FileMap) WithSuffix(suffix string) FileMap {
-	return m.Filter(func(key string, value *File) bool {
+func (m FuncDeclMap) WithSuffix(suffix string) FuncDeclMap {
+	return m.Filter(func(key string, value *FuncDecl) bool {
+		return strings.HasSuffix(key, suffix)
+	})
+}
+
+// Keys returns a new slice containing the set of map keys. The order is unspecified.
+func (m ImportDeclMap) Keys() (keys []string) {
+	for name := range m {
+		keys = append(keys, name)
+	}
+
+	return
+}
+
+// Values returns a new slice containing the set of map values. The order is unspecified.
+func (m ImportDeclMap) Values() (values []*ImportDecl) {
+	for _, value := range m {
+		values = append(values, value)
+	}
+
+	return
+}
+
+// Contains reports whether key is within map.
+func (m ImportDeclMap) Contains(key string) bool {
+	_, found := m[key]
+
+	return found
+}
+
+// Clone returns a shadow copy of map.
+func (m ImportDeclMap) Clone() ImportDeclMap {
+	cloned := make(ImportDeclMap)
+
+	for key, value := range m {
+		cloned[key] = value
+	}
+
+	return cloned
+}
+
+// Filter filters the map to only include elements for which filter returns true.
+func (m ImportDeclMap) Filter(filter func(key string, value *ImportDecl) bool) ImportDeclMap {
+	filtered := make(ImportDeclMap)
+
+	for key, value := range m {
+		if filter(key, value) {
+			filtered[key] = value
+		}
+	}
+
+	return filtered
+}
+
+// WithPrefix filters the map to only include elements for which contains prefix.
+func (m ImportDeclMap) WithPrefix(prefix string) ImportDeclMap {
+	return m.Filter(func(key string, value *ImportDecl) bool {
+		return strings.HasPrefix(key, prefix)
+	})
+}
+
+// WithSuffix filters the map to only include elements for which contains suffix.
+func (m ImportDeclMap) WithSuffix(suffix string) ImportDeclMap {
+	return m.Filter(func(key string, value *ImportDecl) bool {
 		return strings.HasSuffix(key, suffix)
 	})
 }
@@ -254,69 +380,6 @@ func (m MethodMap) WithPrefix(prefix string) MethodMap {
 // WithSuffix filters the map to only include elements for which contains suffix.
 func (m MethodMap) WithSuffix(suffix string) MethodMap {
 	return m.Filter(func(key string, value *Method) bool {
-		return strings.HasSuffix(key, suffix)
-	})
-}
-
-// Keys returns a new slice containing the set of map keys. The order is unspecified.
-func (m Packages) Keys() (keys []string) {
-	for name := range m {
-		keys = append(keys, name)
-	}
-
-	return
-}
-
-// Values returns a new slice containing the set of map values. The order is unspecified.
-func (m Packages) Values() (values []*Package) {
-	for _, value := range m {
-		values = append(values, value)
-	}
-
-	return
-}
-
-// Contains reports whether key is within map.
-func (m Packages) Contains(key string) bool {
-	_, found := m[key]
-
-	return found
-}
-
-// Clone returns a shadow copy of map.
-func (m Packages) Clone() Packages {
-	cloned := make(Packages)
-
-	for key, value := range m {
-		cloned[key] = value
-	}
-
-	return cloned
-}
-
-// Filter filters the map to only include elements for which filter returns true.
-func (m Packages) Filter(filter func(key string, value *Package) bool) Packages {
-	filtered := make(Packages)
-
-	for key, value := range m {
-		if filter(key, value) {
-			filtered[key] = value
-		}
-	}
-
-	return filtered
-}
-
-// WithPrefix filters the map to only include elements for which contains prefix.
-func (m Packages) WithPrefix(prefix string) Packages {
-	return m.Filter(func(key string, value *Package) bool {
-		return strings.HasPrefix(key, prefix)
-	})
-}
-
-// WithSuffix filters the map to only include elements for which contains suffix.
-func (m Packages) WithSuffix(suffix string) Packages {
-	return m.Filter(func(key string, value *Package) bool {
 		return strings.HasSuffix(key, suffix)
 	})
 }
@@ -506,6 +569,132 @@ func (m TypeDeclMap) WithPrefix(prefix string) TypeDeclMap {
 // WithSuffix filters the map to only include elements for which contains suffix.
 func (m TypeDeclMap) WithSuffix(suffix string) TypeDeclMap {
 	return m.Filter(func(key string, value *TypeDecl) bool {
+		return strings.HasSuffix(key, suffix)
+	})
+}
+
+// Keys returns a new slice containing the set of map keys. The order is unspecified.
+func (m ValueSpecMap) Keys() (keys []string) {
+	for name := range m {
+		keys = append(keys, name)
+	}
+
+	return
+}
+
+// Values returns a new slice containing the set of map values. The order is unspecified.
+func (m ValueSpecMap) Values() (values []*ValueSpec) {
+	for _, value := range m {
+		values = append(values, value)
+	}
+
+	return
+}
+
+// Contains reports whether key is within map.
+func (m ValueSpecMap) Contains(key string) bool {
+	_, found := m[key]
+
+	return found
+}
+
+// Clone returns a shadow copy of map.
+func (m ValueSpecMap) Clone() ValueSpecMap {
+	cloned := make(ValueSpecMap)
+
+	for key, value := range m {
+		cloned[key] = value
+	}
+
+	return cloned
+}
+
+// Filter filters the map to only include elements for which filter returns true.
+func (m ValueSpecMap) Filter(filter func(key string, value *ValueSpec) bool) ValueSpecMap {
+	filtered := make(ValueSpecMap)
+
+	for key, value := range m {
+		if filter(key, value) {
+			filtered[key] = value
+		}
+	}
+
+	return filtered
+}
+
+// WithPrefix filters the map to only include elements for which contains prefix.
+func (m ValueSpecMap) WithPrefix(prefix string) ValueSpecMap {
+	return m.Filter(func(key string, value *ValueSpec) bool {
+		return strings.HasPrefix(key, prefix)
+	})
+}
+
+// WithSuffix filters the map to only include elements for which contains suffix.
+func (m ValueSpecMap) WithSuffix(suffix string) ValueSpecMap {
+	return m.Filter(func(key string, value *ValueSpec) bool {
+		return strings.HasSuffix(key, suffix)
+	})
+}
+
+// Keys returns a new slice containing the set of map keys. The order is unspecified.
+func (m VarDeclMap) Keys() (keys []string) {
+	for name := range m {
+		keys = append(keys, name)
+	}
+
+	return
+}
+
+// Values returns a new slice containing the set of map values. The order is unspecified.
+func (m VarDeclMap) Values() (values []*VarDecl) {
+	for _, value := range m {
+		values = append(values, value)
+	}
+
+	return
+}
+
+// Contains reports whether key is within map.
+func (m VarDeclMap) Contains(key string) bool {
+	_, found := m[key]
+
+	return found
+}
+
+// Clone returns a shadow copy of map.
+func (m VarDeclMap) Clone() VarDeclMap {
+	cloned := make(VarDeclMap)
+
+	for key, value := range m {
+		cloned[key] = value
+	}
+
+	return cloned
+}
+
+// Filter filters the map to only include elements for which filter returns true.
+func (m VarDeclMap) Filter(filter func(key string, value *VarDecl) bool) VarDeclMap {
+	filtered := make(VarDeclMap)
+
+	for key, value := range m {
+		if filter(key, value) {
+			filtered[key] = value
+		}
+	}
+
+	return filtered
+}
+
+// WithPrefix filters the map to only include elements for which contains prefix.
+func (m VarDeclMap) WithPrefix(prefix string) VarDeclMap {
+	return m.Filter(func(key string, value *VarDecl) bool {
+		return strings.HasPrefix(key, prefix)
+	})
+}
+
+// WithSuffix filters the map to only include elements for which contains suffix.
+func (m VarDeclMap) WithSuffix(suffix string) VarDeclMap {
+	return m.Filter(func(key string, value *VarDecl) bool {
 		return strings.HasSuffix(key, suffix)
 	})
 }

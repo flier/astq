@@ -4,7 +4,8 @@ import (
 	"bytes"
 	"fmt"
 	"go/ast"
-	"go/token"
+	"io"
+	"path/filepath"
 	"reflect"
 	"regexp"
 	"strings"
@@ -18,166 +19,6 @@ var (
 
 type Named interface {
 	Name() string
-}
-
-type Packages map[string]*Package // +map
-
-type Package struct {
-	*ast.Package
-}
-
-func FromPackage(p *ast.Package) *Package {
-	return &Package{p}
-}
-
-func FromPackages(pkgs map[string]*ast.Package) Packages {
-	wrapped := make(map[string]*Package)
-
-	for name, pkg := range pkgs {
-		wrapped[name] = &Package{pkg}
-	}
-
-	return wrapped
-}
-
-func (p *Package) Dump() string {
-	return AstDump(p.Package)
-}
-
-func (p *Package) File(name string) *File {
-	for filename, file := range p.Package.Files {
-		if filename == name {
-			return &File{file}
-		}
-	}
-
-	return nil
-}
-
-func (p *Package) Files() FileMap {
-	files := make(FileMap)
-
-	for name, file := range p.Package.Files {
-		files[name] = &File{file}
-	}
-
-	return files
-}
-
-type FileMap map[string]*File // +map
-
-type File struct {
-	*ast.File
-}
-
-func FromFile(f *ast.File) *File {
-	return &File{f}
-}
-
-func (f *File) Dump() string {
-	return AstDump(f.File)
-}
-
-func (f *File) Tags() Tags {
-	return ExtractTags(f.File.Doc)
-}
-
-func (f *File) TypeDecl(name string) *TypeDecl {
-	for _, decl := range f.Decls {
-		if decl, ok := decl.(*ast.GenDecl); ok && decl.Tok == token.TYPE {
-			for _, spec := range decl.Specs {
-				if spec, ok := spec.(*ast.TypeSpec); ok && spec.Name.Name == name {
-					return &TypeDecl{f, decl, &TypeSpec{spec}}
-				}
-			}
-		}
-	}
-
-	return nil
-}
-
-func (f *File) TypeDecls() TypeDeclMap {
-	items := make(TypeDeclMap)
-
-	for _, decl := range f.Decls {
-		if decl, ok := decl.(*ast.GenDecl); ok && decl.Tok == token.TYPE {
-			for _, spec := range decl.Specs {
-				if spec, ok := spec.(*ast.TypeSpec); ok {
-					items[spec.Name.Name] = &TypeDecl{f, decl, &TypeSpec{spec}}
-				}
-			}
-		}
-	}
-
-	return items
-}
-
-func (f *File) Interface(name string) *InterfaceDef {
-	for _, decl := range f.Decls {
-		if decl, ok := decl.(*ast.GenDecl); ok && decl.Tok == token.TYPE {
-			for _, spec := range decl.Specs {
-				if spec, ok := spec.(*ast.TypeSpec); ok {
-					if it, ok := spec.Type.(*ast.InterfaceType); ok && spec.Name.Name == name {
-						return &InterfaceDef{&TypeSpec{spec}, &InterfaceType{it}}
-					}
-				}
-			}
-		}
-	}
-
-	return nil
-}
-
-func (f *File) Interfaces() InterfaceMap {
-	items := make(InterfaceMap)
-
-	for _, decl := range f.Decls {
-		if decl, ok := decl.(*ast.GenDecl); ok && decl.Tok == token.TYPE {
-			for _, spec := range decl.Specs {
-				if spec, ok := spec.(*ast.TypeSpec); ok {
-					if it, ok := spec.Type.(*ast.InterfaceType); ok {
-						items[spec.Name.Name] = &InterfaceDef{&TypeSpec{spec}, &InterfaceType{it}}
-					}
-				}
-			}
-		}
-	}
-
-	return items
-}
-
-func (f *File) Struct(name string) *StructDef {
-	for _, decl := range f.Decls {
-		if decl, ok := decl.(*ast.GenDecl); ok && decl.Tok == token.TYPE {
-			for _, spec := range decl.Specs {
-				if spec, ok := spec.(*ast.TypeSpec); ok {
-					if st, ok := spec.Type.(*ast.StructType); ok && spec.Name.Name == name {
-						return &StructDef{&TypeSpec{spec}, &StructType{st}}
-					}
-				}
-			}
-		}
-	}
-
-	return nil
-}
-
-func (f *File) Structs() StructMap {
-	items := make(StructMap)
-
-	for _, decl := range f.Decls {
-		if decl, ok := decl.(*ast.GenDecl); ok && decl.Tok == token.TYPE {
-			for _, spec := range decl.Specs {
-				if spec, ok := spec.(*ast.TypeSpec); ok {
-					if st, ok := spec.Type.(*ast.StructType); ok {
-						items[spec.Name.Name] = &StructDef{&TypeSpec{spec}, &StructType{st}}
-					}
-				}
-			}
-		}
-	}
-
-	return items
 }
 
 type TypeDeclMap map[string]*TypeDecl // +map
@@ -483,12 +324,132 @@ func (f *Field) Tag() reflect.StructTag {
 	return reflect.StructTag(strings.Trim(f.Field.Tag.Value, "`"))
 }
 
+type ImportDeclMap map[string]*ImportDecl // +map
+
+type ImportDecl struct {
+	*File
+	*ast.GenDecl
+	*ImportSpec
+}
+
 type ImportSpec struct {
 	*ast.ImportSpec
 }
 
+func (i *ImportSpec) Name() string {
+	if i.ImportSpec.Name != nil {
+		return i.ImportSpec.Name.Name
+	}
+
+	return filepath.Base(i.Path())
+}
+
+func (i *ImportSpec) Path() string {
+	return strings.Trim(i.ImportSpec.Path.Value, `"`)
+}
+
+func (i *ImportSpec) String() string {
+	if i.ImportSpec.Name != nil {
+		return fmt.Sprintf("import %s %v", i.ImportSpec.Name.Name, i.ImportSpec.Path.Value)
+	}
+
+	return fmt.Sprintf("import %v", i.ImportSpec.Path.Value)
+}
+
+type FuncDeclMap map[string]*FuncDecl // +map
+
 type FuncDecl struct {
 	*ast.FuncDecl
+}
+
+type ValueSpecMap map[string]*ValueSpec // +map
+
+type ValueSpec struct {
+	*ast.ValueSpec
+	idx int
+}
+
+func (v *ValueSpec) Name() string {
+	return v.ValueSpec.Names[v.idx].Name
+}
+
+func (v *ValueSpec) Type() Expr {
+	return AsExpr(v.ValueSpec.Type)
+}
+
+func (v *ValueSpec) Value() Expr {
+	if len(v.ValueSpec.Names) == len(v.ValueSpec.Values) && v.idx < len(v.ValueSpec.Values) {
+		return AsExpr(v.ValueSpec.Values[v.idx])
+	}
+
+	return nil
+}
+
+func (v *ValueSpec) Values() (values []Expr) {
+	for _, value := range v.ValueSpec.Values {
+		values = append(values, AsExpr(value))
+	}
+
+	return
+}
+
+func (v *ValueSpec) String() string {
+	buf := new(bytes.Buffer)
+
+	if len(v.Names) > 1 {
+		var names []string
+
+		for _, ident := range v.Names {
+			names = append(names, ident.Name)
+		}
+
+		io.WriteString(buf, fmt.Sprintf("(%s)", strings.Join(names, ", ")))
+	} else {
+		io.WriteString(buf, v.Name())
+	}
+
+	if ty := v.Type(); ty != nil {
+		fmt.Fprintf(buf, " %s", ty)
+	}
+	switch len(v.ValueSpec.Values) {
+	case 0:
+	case 1:
+		fmt.Fprintf(buf, " = %s", AsExpr(v.ValueSpec.Values[0]))
+	default:
+		var values []string
+
+		for _, value := range v.ValueSpec.Values {
+			values = append(values, AsExpr(value).String())
+		}
+
+		fmt.Fprintf(buf, " = (%s)", strings.Join(values, ", "))
+	}
+
+	return buf.String()
+}
+
+type ConstDeclMap map[string]*ConstDecl // +map
+
+type ConstDecl struct {
+	*File
+	*ast.GenDecl
+	*ValueSpec
+}
+
+func (c *ConstDecl) String() string {
+	return "const " + c.ValueSpec.String()
+}
+
+type VarDeclMap map[string]*VarDecl // +map
+
+type VarDecl struct {
+	*File
+	*ast.GenDecl
+	*ValueSpec
+}
+
+func (v *VarDecl) String() string {
+	return "var " + v.ValueSpec.String()
 }
 
 type Labeled struct {
@@ -525,14 +486,4 @@ func ExtractTags(groups ...*ast.CommentGroup) Tags {
 	}
 
 	return tags
-}
-
-func AstDump(x interface{}) string {
-	var buf bytes.Buffer
-
-	if err := ast.Fprint(&buf, nil, x, ast.NotNilFilter); err != nil {
-		panic(err)
-	}
-
-	return buf.String()
 }
