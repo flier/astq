@@ -17,6 +17,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strconv"
 	"strings"
 	"text/template"
@@ -30,13 +31,23 @@ const (
 )
 
 var (
-	outFile   string
-	pkgPath   string
-	filters   string
-	tplName   string
-	userVars  string
-	parseMode = parser.AllErrors | parser.ParseComments
+	generator   = &Generator{filepath.Base(os.Args[0]), "1.0"}
+	outFile     string
+	pkgPath     string
+	filters     string
+	tplName     string
+	userVars    string
+	showVersion bool
+	parseMode   = parser.AllErrors | parser.ParseComments
 )
+
+type Generator struct {
+	Name, Version string
+}
+
+func (g *Generator) String() string {
+	return fmt.Sprintf("%s v%s", g.Name, g.Version)
+}
 
 func init() {
 	flag.StringVar(&userVars, "D", "", "define a key-value pair to parametrize the template (example \"-D key=value\" or \"-D key\")")
@@ -44,6 +55,7 @@ func init() {
 	flag.StringVar(&outFile, "o", "-", "the output file name")
 	flag.StringVar(&pkgPath, "p", "-", "the source package import path")
 	flag.StringVar(&tplName, "t", "./template/", "the template to use")
+	flag.BoolVar(&showVersion, "v", false, "show the version")
 }
 
 func openOutput() (w io.Writer, err error) {
@@ -138,6 +150,7 @@ func parseGoPackage() (pkgs map[string]*ast.Package, err error) {
 	pkgLocations := []string{
 		pkgPath,
 		filepath.Join(".", pkgPath),
+		filepath.Join("vendor", pkgPath),
 		filepath.Join(gopath, "src", pkgPath),
 	}
 
@@ -180,6 +193,42 @@ func parseGoFile(fset *token.FileSet, filename string, src io.Reader) (pkgs map[
 	return
 }
 
+func injectEnvVars(data map[string]interface{}) error {
+	inject := func(name, defval string) {
+		if env, found := os.LookupEnv(name); found {
+			data[name] = env
+		} else {
+			data[name] = defval
+		}
+	}
+
+	inject("GOARCH", build.Default.GOARCH)
+	inject("GOOS", build.Default.GOOS)
+	inject("GOROOT", build.Default.GOROOT)
+	inject("GOPATH", build.Default.GOPATH)
+
+	envVars := make(map[string]string)
+
+	for _, env := range os.Environ() {
+		parts := strings.SplitN(env, "=", 2)
+
+		if len(parts) > 1 {
+			key := strings.TrimSpace(parts[0])
+			value := strings.TrimSpace(parts[1])
+
+			envVars[key] = value
+		} else {
+			key := strings.TrimSpace(env)
+
+			envVars[key] = ""
+		}
+	}
+
+	data["ENV"] = envVars
+
+	return nil
+}
+
 func parseUserDefinedVars(data map[string]interface{}) error {
 	if len(userVars) > 0 {
 		for _, v := range strings.Split(userVars, ",") {
@@ -215,7 +264,23 @@ func parseUserDefinedVars(data map[string]interface{}) error {
 func main() {
 	flag.Parse()
 
+	if showVersion {
+		fmt.Println(generator)
+		return
+	}
+
 	data := make(map[string]interface{})
+
+	data["GoVersion"] = runtime.Version()
+	data["Generator"] = generator
+
+	if err := injectEnvVars(data); err != nil {
+		log.Fatalf("fail to inject environment variables, %v", err)
+	}
+
+	if err := parseUserDefinedVars(data); err != nil {
+		log.Fatalf("fail to parse user defined variables, %v", err)
+	}
 
 	pkgs, err := parseGoPackage()
 	if err != nil {
@@ -236,10 +301,6 @@ func main() {
 		break
 	}
 
-	if err := parseUserDefinedVars(data); err != nil {
-		log.Fatalf("fail to parse user defined variables, %v", err)
-	}
-
 	tpl, err := openTemplate()
 	if err != nil {
 		log.Fatalf("fail to parse template `%s`, %v", tplName, err)
@@ -258,7 +319,7 @@ func main() {
 
 	src, err := format.Source(buf.Bytes())
 	if err != nil {
-		log.Fatalf("fail to format generated code, %v", err)
+		log.Fatalf("%s\nfail to format generated code, %v", string(buf.Bytes()), err)
 	}
 
 	if _, err = out.Write(src); err != nil {

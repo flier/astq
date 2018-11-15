@@ -22,7 +22,7 @@ type Bar interface {}
 
 `, parser.AllErrors)
 
-	fmt.Println(FromFile(f).Type("Bar").Name())
+	fmt.Println(FromFile(f).TypeDef("Bar").Name())
 	// Output: Bar
 }
 
@@ -36,7 +36,7 @@ type Bar interface {}
 
 `, parser.AllErrors)
 
-	fmt.Println(Sorted(FromFile(f).Types().Keys()))
+	fmt.Println(Sorted(FromFile(f).TypeDefs().Keys()))
 	// Output: [Bar Foo]
 }
 
@@ -51,7 +51,7 @@ type Bar interface {}
 
 `, parser.AllErrors|parser.ParseComments)
 
-	fmt.Println(FromFile(f).Types().WithTag("map").Keys())
+	fmt.Println(FromFile(f).TypeDefs().WithTag("map").Keys())
 	// Output: [Foo]
 }
 

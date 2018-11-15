@@ -1,6 +1,7 @@
 package query
 
 import (
+	"bytes"
 	"fmt"
 	"go/ast"
 	"go/token"
@@ -39,6 +40,10 @@ func FromPackages(pkgs map[string]*ast.Package) Packages {
 	return wrapped
 }
 
+func (p *Package) Dump() string {
+	return AstDump(p.Package)
+}
+
 func (p *Package) File(name string) *File {
 	for filename, file := range p.Package.Files {
 		if filename == name {
@@ -69,18 +74,20 @@ func FromFile(f *ast.File) *File {
 	return &File{f}
 }
 
+func (f *File) Dump() string {
+	return AstDump(f.File)
+}
+
 func (f *File) Tags() Tags {
 	return ExtractTags(f.File.Doc)
 }
 
-func (f *File) Type(name string) *Type {
+func (f *File) TypeDef(name string) *TypeDef {
 	for _, decl := range f.Decls {
 		if decl, ok := decl.(*ast.GenDecl); ok && decl.Tok == token.TYPE {
 			for _, spec := range decl.Specs {
 				if spec, ok := spec.(*ast.TypeSpec); ok && spec.Name.Name == name {
-					return &Type{
-						f, decl, spec,
-					}
+					return &TypeDef{f, decl, &TypeSpec{spec}}
 				}
 			}
 		}
@@ -89,16 +96,14 @@ func (f *File) Type(name string) *Type {
 	return nil
 }
 
-func (f *File) Types() TypeMap {
-	items := make(TypeMap)
+func (f *File) TypeDefs() TypeDefMap {
+	items := make(TypeDefMap)
 
 	for _, decl := range f.Decls {
 		if decl, ok := decl.(*ast.GenDecl); ok && decl.Tok == token.TYPE {
 			for _, spec := range decl.Specs {
 				if spec, ok := spec.(*ast.TypeSpec); ok {
-					items[spec.Name.Name] = &Type{
-						f, decl, spec,
-					}
+					items[spec.Name.Name] = &TypeDef{f, decl, &TypeSpec{spec}}
 				}
 			}
 		}
@@ -107,13 +112,13 @@ func (f *File) Types() TypeMap {
 	return items
 }
 
-func (f *File) Interface(name string) *Interface {
+func (f *File) Interface(name string) *InterfaceDef {
 	for _, decl := range f.Decls {
 		if decl, ok := decl.(*ast.GenDecl); ok && decl.Tok == token.TYPE {
 			for _, spec := range decl.Specs {
 				if spec, ok := spec.(*ast.TypeSpec); ok {
 					if it, ok := spec.Type.(*ast.InterfaceType); ok && spec.Name.Name == name {
-						return &Interface{&Type{f, decl, spec}, it}
+						return &InterfaceDef{&TypeSpec{spec}, &InterfaceType{it}}
 					}
 				}
 			}
@@ -131,7 +136,7 @@ func (f *File) Interfaces() InterfaceMap {
 			for _, spec := range decl.Specs {
 				if spec, ok := spec.(*ast.TypeSpec); ok {
 					if it, ok := spec.Type.(*ast.InterfaceType); ok {
-						items[spec.Name.Name] = &Interface{&Type{f, decl, spec}, it}
+						items[spec.Name.Name] = &InterfaceDef{&TypeSpec{spec}, &InterfaceType{it}}
 					}
 				}
 			}
@@ -141,13 +146,13 @@ func (f *File) Interfaces() InterfaceMap {
 	return items
 }
 
-func (f *File) Struct(name string) *Struct {
+func (f *File) Struct(name string) *StructDef {
 	for _, decl := range f.Decls {
 		if decl, ok := decl.(*ast.GenDecl); ok && decl.Tok == token.TYPE {
 			for _, spec := range decl.Specs {
 				if spec, ok := spec.(*ast.TypeSpec); ok {
 					if st, ok := spec.Type.(*ast.StructType); ok && spec.Name.Name == name {
-						return &Struct{&Type{f, decl, spec}, st}
+						return &StructDef{&TypeSpec{spec}, &StructType{st}}
 					}
 				}
 			}
@@ -165,7 +170,7 @@ func (f *File) Structs() StructMap {
 			for _, spec := range decl.Specs {
 				if spec, ok := spec.(*ast.TypeSpec); ok {
 					if st, ok := spec.Type.(*ast.StructType); ok {
-						items[spec.Name.Name] = &Struct{&Type{f, decl, spec}, st}
+						items[spec.Name.Name] = &StructDef{&TypeSpec{spec}, &StructType{st}}
 					}
 				}
 			}
@@ -175,19 +180,51 @@ func (f *File) Structs() StructMap {
 	return items
 }
 
-type TypeMap map[string]*Type // +map
+type TypeDefMap map[string]*TypeDef // +map
 
-type Type struct {
+type TypeDef struct {
 	*File
 	*ast.GenDecl
+	*TypeSpec
+}
+
+func (t *TypeDef) Tags() Tags {
+	var docs []*ast.CommentGroup
+
+	if t.File != nil {
+		docs = append(docs, t.File.Doc)
+	}
+	if t.GenDecl != nil {
+		docs = append(docs, t.GenDecl.Doc)
+	}
+	if t.TypeSpec != nil {
+		docs = append(docs, t.TypeSpec.TypeSpec.Doc, t.TypeSpec.TypeSpec.Comment)
+	}
+
+	return ExtractTags(docs...)
+}
+
+type TypeSpec struct {
 	*ast.TypeSpec
 }
 
-func (t *Type) Name() string {
+func (t *TypeSpec) Name() string {
 	return t.TypeSpec.Name.Name
 }
 
-func (t *Type) Doc() (doc []string) {
+func (t *TypeSpec) Type() Expr {
+	return AsExpr(t.TypeSpec.Type)
+}
+
+func (t *TypeSpec) String() string {
+	return fmt.Sprintf("type %s %s", t.Name(), t.Type())
+}
+
+func (t *TypeSpec) Dump() string {
+	return AstDump(t.TypeSpec)
+}
+
+func (t *TypeSpec) Doc() (doc []string) {
 	if t.TypeSpec.Doc != nil {
 		for _, comment := range t.TypeSpec.Doc.List {
 			doc = append(doc, comment.Text)
@@ -197,7 +234,7 @@ func (t *Type) Doc() (doc []string) {
 	return
 }
 
-func (t *Type) Comment() (doc []string) {
+func (t *TypeSpec) Comment() (doc []string) {
 	if t.TypeSpec.Comment != nil {
 		for _, comment := range t.TypeSpec.Comment.List {
 			doc = append(doc, comment.Text)
@@ -207,54 +244,105 @@ func (t *Type) Comment() (doc []string) {
 	return
 }
 
-func (t *Type) Tags() Tags {
-	return ExtractTags(t.File.Doc, t.GenDecl.Doc, t.TypeSpec.Doc, t.TypeSpec.Comment)
+type Array struct {
+	*ast.ArrayType
 }
 
-func (t *Type) IsInterface() bool {
-	_, ok := t.TypeSpec.Type.(*ast.InterfaceType)
-
-	return ok
+func (a *Array) Len() Expr {
+	return AsExpr(a.ArrayType.Len)
 }
 
-func (t *Type) AsInterface() *Interface {
-	i, ok := t.TypeSpec.Type.(*ast.InterfaceType)
+func (a *Array) Elem() Expr {
+	return AsExpr(a.ArrayType.Elt)
+}
 
-	if ok {
-		return &Interface{t, i}
+func (a *Array) String() string {
+	return fmt.Sprintf("[]%s", a.Elem())
+}
+
+func (a *Array) Dump() string {
+	return AstDump(a.ArrayType)
+}
+
+type Map struct {
+	*ast.MapType
+}
+
+func (m *Map) Key() Expr {
+	return AsExpr(m.MapType.Key)
+}
+
+func (m *Map) Value() Expr {
+	return AsExpr(m.MapType.Value)
+}
+
+func (m *Map) String() string {
+	return fmt.Sprintf("map[%s]%s", m.Key(), m.Value())
+}
+
+func (m *Map) Dump() string {
+	return AstDump(m.MapType)
+}
+
+type FuncType struct {
+	*ast.FuncType
+}
+
+func (f *FuncType) String() string {
+	return fmt.Sprintf("func ()")
+}
+
+func (f *FuncType) Dump() string {
+	return AstDump(f.FuncType)
+}
+
+type ChanType struct {
+	*ast.ChanType
+}
+
+func (c *ChanType) Dir() ast.ChanDir {
+	return c.ChanType.Dir
+}
+
+func (c *ChanType) Value() Expr {
+	return AsExpr(c.ChanType.Value)
+}
+
+func (c *ChanType) String() string {
+	switch c.ChanType.Dir {
+	case ast.SEND:
+		return fmt.Sprintf("chan<- %s", c.Value())
+	case ast.RECV:
+		return fmt.Sprintf("<-chan %s", c.Value())
+	default:
+		return fmt.Sprintf("chan %s", c.Value())
 	}
-
-	return nil
 }
 
-func (t *Type) IsStruct() bool {
-	_, ok := t.TypeSpec.Type.(*ast.StructType)
-
-	return ok
+func (c *ChanType) Dump() string {
+	return AstDump(c.ChanType)
 }
 
-func (t *Type) AsStruct() *Struct {
-	s, ok := t.TypeSpec.Type.(*ast.StructType)
+type InterfaceMap map[string]*InterfaceDef // +map
 
-	if ok {
-		return &Struct{t, s}
-	}
-
-	return nil
+type InterfaceDef struct {
+	*TypeSpec
+	*InterfaceType
 }
 
-type InterfaceMap map[string]*Interface // +map
-
-type Interface struct {
-	*Type
+type InterfaceType struct {
 	*ast.InterfaceType
 }
 
-func (intf *Interface) Name() string {
-	return intf.TypeSpec.Name.Name
+func (intf *InterfaceType) String() string {
+	return fmt.Sprintf("interface {}")
 }
 
-func (intf *Interface) Method(name string) *Method {
+func (intf *InterfaceType) Dump() string {
+	return AstDump(intf.InterfaceType)
+}
+
+func (intf *InterfaceType) Method(name string) *Method {
 	for _, field := range intf.InterfaceType.Methods.List {
 		if ty, ok := field.Type.(*ast.FuncType); ok {
 			for _, method := range field.Names {
@@ -270,7 +358,7 @@ func (intf *Interface) Method(name string) *Method {
 	return nil
 }
 
-func (intf *Interface) Methods() MethodMap {
+func (intf *InterfaceType) Methods() MethodMap {
 	items := make(MethodMap)
 
 	for _, field := range intf.InterfaceType.Methods.List {
@@ -289,7 +377,7 @@ func (intf *Interface) Methods() MethodMap {
 type MethodMap map[string]*Method // +map
 
 type Method struct {
-	*Interface
+	*InterfaceType
 	*ast.Field
 	*ast.Ident
 	*ast.FuncType
@@ -307,18 +395,26 @@ func (m *Method) Tag() reflect.StructTag {
 	return reflect.StructTag(m.Field.Tag.Value)
 }
 
-type StructMap map[string]*Struct // +map
+type StructMap map[string]*StructDef // +map
 
-type Struct struct {
-	*Type
+type StructDef struct {
+	*TypeSpec
+	*StructType
+}
+
+type StructType struct {
 	*ast.StructType
 }
 
-func (s *Struct) Name() string {
-	return s.TypeSpec.Name.Name
+func (s *StructType) String() string {
+	return fmt.Sprintf("struct {}")
 }
 
-func (s *Struct) Field(name string) *Field {
+func (s *StructType) Dump() string {
+	return AstDump(s.StructType)
+}
+
+func (s *StructType) Field(name string) *Field {
 	for _, field := range s.StructType.Fields.List {
 		if len(field.Names) > 0 {
 			for _, ident := range field.Names {
@@ -338,7 +434,7 @@ func (s *Struct) Field(name string) *Field {
 	return nil
 }
 
-func (s *Struct) Fields() FieldMap {
+func (s *StructType) Fields() FieldMap {
 	items := make(FieldMap)
 
 	for _, field := range s.StructType.Fields.List {
@@ -358,7 +454,7 @@ func (s *Struct) Fields() FieldMap {
 type FieldMap map[string]*Field // +map
 
 type Field struct {
-	*Struct
+	*StructType
 	*ast.Field
 	*ast.Ident
 }
@@ -375,8 +471,8 @@ func (f *Field) Name() string {
 	return f.Path().Last()
 }
 
-func (f *Field) Type() ast.Expr {
-	return f.Field.Type
+func (f *Field) Type() Expr {
+	return AsExpr(f.Field.Type)
 }
 
 func (f *Field) Tag() reflect.StructTag {
@@ -387,58 +483,16 @@ func (f *Field) Tag() reflect.StructTag {
 	return reflect.StructTag(strings.Trim(f.Field.Tag.Value, "`"))
 }
 
-type Path struct {
-	ast.Expr
+type ImportSpec struct {
+	*ast.ImportSpec
 }
 
-func (p *Path) String() string {
-	if p.Tail() == nil {
-		return p.Head()
-	}
-
-	return fmt.Sprintf("%s.%s", p.Head(), p.Tail())
+type FuncDecl struct {
+	*ast.FuncDecl
 }
 
-func (p *Path) Head() string {
-	switch expr := p.Expr.(type) {
-	case *ast.Ident:
-		return expr.Name
-	case *ast.StarExpr:
-		return "*"
-	case *ast.SelectorExpr:
-		p := &Path{expr.X}
-		return p.Head()
-	default:
-		panic(fmt.Errorf("unexpect expr [%d:%d]: %v", expr.Pos(), expr.End(), expr))
-	}
-}
-
-func (p *Path) Tail() *Path {
-	switch expr := p.Expr.(type) {
-	case *ast.Ident:
-		return nil
-	case *ast.StarExpr:
-		return &Path{expr.X}
-	case *ast.SelectorExpr:
-		return &Path{expr.Sel}
-	default:
-		panic(fmt.Errorf("unexpect expr [%d:%d]: %v", expr.Pos(), expr.End(), expr))
-	}
-}
-
-func (p *Path) Last() string {
-	switch expr := p.Expr.(type) {
-	case *ast.Ident:
-		return expr.Name
-	case *ast.StarExpr:
-		p := &Path{expr.X}
-		return p.Last()
-	case *ast.SelectorExpr:
-		p := &Path{expr.Sel}
-		return p.Last()
-	default:
-		panic(fmt.Errorf("unexpect expr [%d:%d]: %v", expr.Pos(), expr.End(), expr))
-	}
+type Labeled struct {
+	*ast.LabeledStmt
 }
 
 type Tags map[string]string // +map
@@ -471,4 +525,14 @@ func ExtractTags(groups ...*ast.CommentGroup) Tags {
 	}
 
 	return tags
+}
+
+func AstDump(x interface{}) string {
+	var buf bytes.Buffer
+
+	if err := ast.Fprint(&buf, nil, x, ast.NotNilFilter); err != nil {
+		panic(err)
+	}
+
+	return buf.String()
 }
