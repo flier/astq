@@ -7,7 +7,7 @@ import (
 )
 
 {{ with .File }}
-{{   range ( .TypeDefs.WithTag "map" ) }}
+{{   range ( .TypeDecls.WithTag "map" ) }}
 {{     if .Type.IsMap }}
 // Keys returns a new slice containing the set of map keys. The order is unspecified.
 func (m {{ .Name }}) Keys() (keys []{{ .Type.Key }}) {
@@ -74,7 +74,7 @@ func (m {{ .Name }}) WithSuffix(suffix string) {{ .Name }} {
 }
 {{ end }}
 
-{{ if .Type.Value.IsPtr }}
+{{/* if .Type.Value.IsPtr }}
 {{   if (and .Type.Value.Target.HasObject .Type.Value.Target.Object.IsType) }}
 func (m {{ .Name }}) WithTag(key string) {{ .Name }} {
 	return m.Filter(func(_key {{ .Type.Key }}, _value {{ .Type.Value }}) bool {
@@ -85,7 +85,7 @@ func (m {{ .Name }}) WithTag(key string) {{ .Name }} {
 	})
 }
 {{   end }}
-{{ end }}
+{{ end */}}
 
 {{     end }}
 {{   end }}

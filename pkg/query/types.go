@@ -82,12 +82,12 @@ func (f *File) Tags() Tags {
 	return ExtractTags(f.File.Doc)
 }
 
-func (f *File) TypeDef(name string) *TypeDef {
+func (f *File) TypeDecl(name string) *TypeDecl {
 	for _, decl := range f.Decls {
 		if decl, ok := decl.(*ast.GenDecl); ok && decl.Tok == token.TYPE {
 			for _, spec := range decl.Specs {
 				if spec, ok := spec.(*ast.TypeSpec); ok && spec.Name.Name == name {
-					return &TypeDef{f, decl, &TypeSpec{spec}}
+					return &TypeDecl{f, decl, &TypeSpec{spec}}
 				}
 			}
 		}
@@ -96,14 +96,14 @@ func (f *File) TypeDef(name string) *TypeDef {
 	return nil
 }
 
-func (f *File) TypeDefs() TypeDefMap {
-	items := make(TypeDefMap)
+func (f *File) TypeDecls() TypeDeclMap {
+	items := make(TypeDeclMap)
 
 	for _, decl := range f.Decls {
 		if decl, ok := decl.(*ast.GenDecl); ok && decl.Tok == token.TYPE {
 			for _, spec := range decl.Specs {
 				if spec, ok := spec.(*ast.TypeSpec); ok {
-					items[spec.Name.Name] = &TypeDef{f, decl, &TypeSpec{spec}}
+					items[spec.Name.Name] = &TypeDecl{f, decl, &TypeSpec{spec}}
 				}
 			}
 		}
@@ -180,15 +180,15 @@ func (f *File) Structs() StructMap {
 	return items
 }
 
-type TypeDefMap map[string]*TypeDef // +map
+type TypeDeclMap map[string]*TypeDecl // +map
 
-type TypeDef struct {
+type TypeDecl struct {
 	*File
 	*ast.GenDecl
 	*TypeSpec
 }
 
-func (t *TypeDef) Tags() Tags {
+func (t *TypeDecl) Tags() Tags {
 	var docs []*ast.CommentGroup
 
 	if t.File != nil {

@@ -1,7 +1,7 @@
 package query
 
-func (items TypeDefMap) WithTagValue(key, value string) TypeDefMap {
-	return items.Filter(func(name string, ty *TypeDef) bool {
+func (items TypeDeclMap) WithTagValue(key, value string) TypeDeclMap {
+	return items.Filter(func(name string, ty *TypeDecl) bool {
 		tags := ty.Tags()
 		v, found := tags[key]
 
@@ -9,8 +9,8 @@ func (items TypeDefMap) WithTagValue(key, value string) TypeDefMap {
 	})
 }
 
-func (items TypeDefMap) WithTag(key string) TypeDefMap {
-	return items.Filter(func(name string, ty *TypeDef) bool {
+func (items TypeDeclMap) WithTag(key string) TypeDeclMap {
+	return items.Filter(func(name string, ty *TypeDecl) bool {
 		tags := ty.Tags()
 		_, found := tags[key]
 
@@ -18,8 +18,8 @@ func (items TypeDefMap) WithTag(key string) TypeDefMap {
 	})
 }
 
-func (items TypeDefMap) WithoutTag(key string) TypeDefMap {
-	return items.Filter(func(name string, ty *TypeDef) bool {
+func (items TypeDeclMap) WithoutTag(key string) TypeDeclMap {
+	return items.Filter(func(name string, ty *TypeDecl) bool {
 		tags := ty.Tags()
 		_, found := tags[key]
 

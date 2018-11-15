@@ -448,7 +448,7 @@ func (m Tags) WithSuffix(suffix string) Tags {
 }
 
 // Keys returns a new slice containing the set of map keys. The order is unspecified.
-func (m TypeDefMap) Keys() (keys []string) {
+func (m TypeDeclMap) Keys() (keys []string) {
 	for name := range m {
 		keys = append(keys, name)
 	}
@@ -457,7 +457,7 @@ func (m TypeDefMap) Keys() (keys []string) {
 }
 
 // Values returns a new slice containing the set of map values. The order is unspecified.
-func (m TypeDefMap) Values() (values []*TypeDef) {
+func (m TypeDeclMap) Values() (values []*TypeDecl) {
 	for _, value := range m {
 		values = append(values, value)
 	}
@@ -466,15 +466,15 @@ func (m TypeDefMap) Values() (values []*TypeDef) {
 }
 
 // Contains reports whether key is within map.
-func (m TypeDefMap) Contains(key string) bool {
+func (m TypeDeclMap) Contains(key string) bool {
 	_, found := m[key]
 
 	return found
 }
 
 // Clone returns a shadow copy of map.
-func (m TypeDefMap) Clone() TypeDefMap {
-	cloned := make(TypeDefMap)
+func (m TypeDeclMap) Clone() TypeDeclMap {
+	cloned := make(TypeDeclMap)
 
 	for key, value := range m {
 		cloned[key] = value
@@ -484,8 +484,8 @@ func (m TypeDefMap) Clone() TypeDefMap {
 }
 
 // Filter filters the map to only include elements for which filter returns true.
-func (m TypeDefMap) Filter(filter func(key string, value *TypeDef) bool) TypeDefMap {
-	filtered := make(TypeDefMap)
+func (m TypeDeclMap) Filter(filter func(key string, value *TypeDecl) bool) TypeDeclMap {
+	filtered := make(TypeDeclMap)
 
 	for key, value := range m {
 		if filter(key, value) {
@@ -497,15 +497,15 @@ func (m TypeDefMap) Filter(filter func(key string, value *TypeDef) bool) TypeDef
 }
 
 // WithPrefix filters the map to only include elements for which contains prefix.
-func (m TypeDefMap) WithPrefix(prefix string) TypeDefMap {
-	return m.Filter(func(key string, value *TypeDef) bool {
+func (m TypeDeclMap) WithPrefix(prefix string) TypeDeclMap {
+	return m.Filter(func(key string, value *TypeDecl) bool {
 		return strings.HasPrefix(key, prefix)
 	})
 }
 
 // WithSuffix filters the map to only include elements for which contains suffix.
-func (m TypeDefMap) WithSuffix(suffix string) TypeDefMap {
-	return m.Filter(func(key string, value *TypeDef) bool {
+func (m TypeDeclMap) WithSuffix(suffix string) TypeDeclMap {
+	return m.Filter(func(key string, value *TypeDecl) bool {
 		return strings.HasSuffix(key, suffix)
 	})
 }
