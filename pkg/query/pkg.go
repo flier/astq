@@ -23,7 +23,7 @@ func FromPackages(pkgs map[string]*ast.Package) Packages {
 }
 
 func (p *Package) Dump() string {
-	return AstDump(p.Package)
+	return astDump(p.Package)
 }
 
 func (p *Package) File(name string) *File {

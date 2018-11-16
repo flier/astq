@@ -37,3 +37,43 @@ type S struct {
 	fmt.Println(tag, tag.Get("species"), tag.Get("color"))
 	// Output: species:"gopher" color:"blue" gopher blue
 }
+
+func ExampleInterfaceType_Methods() {
+	f, _ := parser.ParseFile(token.NewFileSet(), "test.go", `
+
+package test
+
+type Buf interface {
+	Read(b Buffer) bool
+	Write(b Buffer) bool
+	Close()
+}
+
+`, parser.AllErrors)
+
+	fmt.Println(Sorted(FromFile(f).Interface("Buf").Methods().Keys()))
+	// Output: [Close Read Write]
+}
+
+func ExampleInterfaceType_Method() {
+	f, _ := parser.ParseFile(token.NewFileSet(), "test.go", `
+
+package test
+
+type Buf interface {
+	Read(b Buffer) bool
+	Write(b Buffer) bool
+	Close()
+}
+
+`, parser.AllErrors)
+
+	intf := FromFile(f).Interface("Buf")
+
+	fmt.Println(intf.Method("Read").String())
+	fmt.Println(intf.Method("Write").String())
+	fmt.Println(intf.Method("Close").String())
+	// Output: Read(b Buffer) bool
+	// Write(b Buffer) bool
+	// Close()
+}

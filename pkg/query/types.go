@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"fmt"
 	"go/ast"
-	"go/token"
 	"io"
 	"path/filepath"
 	"reflect"
@@ -23,42 +22,6 @@ type Named interface {
 	Name() string
 }
 
-type GenDeclIter <-chan *GenDecl // +iter
-
-type GenDecl struct {
-	*ast.GenDecl
-}
-
-func (d *GenDecl) IsImport() bool { return d.GenDecl.Tok == token.IMPORT }
-func (d *GenDecl) IsConst() bool  { return d.GenDecl.Tok == token.CONST }
-func (d *GenDecl) IsType() bool   { return d.GenDecl.Tok == token.TYPE }
-func (d *GenDecl) IsVar() bool    { return d.GenDecl.Tok == token.VAR }
-
-type TypeDeclIter <-chan *TypeDecl    // +iter
-type TypeDeclMap map[string]*TypeDecl // +map
-
-type TypeDecl struct {
-	*File
-	*GenDecl
-	*TypeSpec
-}
-
-func (t *TypeDecl) Tags() Tags {
-	var docs []*ast.CommentGroup
-
-	if t.File != nil {
-		docs = append(docs, t.File.Doc)
-	}
-	if t.GenDecl != nil {
-		docs = append(docs, t.GenDecl.Doc)
-	}
-	if t.TypeSpec != nil {
-		docs = append(docs, t.TypeSpec.TypeSpec.Doc, t.TypeSpec.TypeSpec.Comment)
-	}
-
-	return ExtractTags(docs...)
-}
-
 type TypeSpec struct {
 	*ast.TypeSpec
 }
@@ -68,7 +31,7 @@ func (t *TypeSpec) Name() string {
 }
 
 func (t *TypeSpec) Type() Expr {
-	return AsExpr(t.TypeSpec.Type)
+	return asExpr(t.TypeSpec.Type)
 }
 
 func (t *TypeSpec) String() string {
@@ -76,7 +39,7 @@ func (t *TypeSpec) String() string {
 }
 
 func (t *TypeSpec) Dump() string {
-	return AstDump(t.TypeSpec)
+	return astDump(t.TypeSpec)
 }
 
 func (t *TypeSpec) Doc() (doc []string) {
@@ -131,44 +94,44 @@ func (t *TypeSpec) AsStruct() *StructType {
 	return nil
 }
 
-type Array struct {
+type ArrayType struct {
 	*ast.ArrayType
 }
 
-func (a *Array) Len() Expr {
-	return AsExpr(a.ArrayType.Len)
+func (a *ArrayType) Len() Expr {
+	return asExpr(a.ArrayType.Len)
 }
 
-func (a *Array) Elem() Expr {
-	return AsExpr(a.ArrayType.Elt)
+func (a *ArrayType) Elem() Expr {
+	return asExpr(a.ArrayType.Elt)
 }
 
-func (a *Array) String() string {
+func (a *ArrayType) String() string {
 	return fmt.Sprintf("[]%s", a.Elem())
 }
 
-func (a *Array) Dump() string {
-	return AstDump(a.ArrayType)
+func (a *ArrayType) Dump() string {
+	return astDump(a.ArrayType)
 }
 
-type Map struct {
+type MapType struct {
 	*ast.MapType
 }
 
-func (m *Map) Key() Expr {
-	return AsExpr(m.MapType.Key)
+func (m *MapType) Key() Expr {
+	return asExpr(m.MapType.Key)
 }
 
-func (m *Map) Value() Expr {
-	return AsExpr(m.MapType.Value)
+func (m *MapType) Value() Expr {
+	return asExpr(m.MapType.Value)
 }
 
-func (m *Map) String() string {
+func (m *MapType) String() string {
 	return fmt.Sprintf("map[%s]%s", m.Key(), m.Value())
 }
 
-func (m *Map) Dump() string {
-	return AstDump(m.MapType)
+func (m *MapType) Dump() string {
+	return astDump(m.MapType)
 }
 
 type ChanType struct {
@@ -197,7 +160,7 @@ func (c *ChanType) CanRecv() bool {
 }
 
 func (c *ChanType) Elem() Expr {
-	return AsExpr(c.ChanType.Value)
+	return asExpr(c.ChanType.Value)
 }
 
 func (c *ChanType) String() string {
@@ -212,15 +175,7 @@ func (c *ChanType) String() string {
 }
 
 func (c *ChanType) Dump() string {
-	return AstDump(c.ChanType)
-}
-
-type InterfaceIter <-chan *InterfaceDef    // +iter
-type InterfaceMap map[string]*InterfaceDef // +map
-
-type InterfaceDef struct {
-	*TypeSpec
-	*InterfaceType
+	return astDump(c.ChanType)
 }
 
 type InterfaceType struct {
@@ -228,23 +183,45 @@ type InterfaceType struct {
 }
 
 func (intf *InterfaceType) String() string {
-	return fmt.Sprintf("interface {}")
+	buf := new(bytes.Buffer)
+
+	buf.WriteString("interface {\n")
+
+	for method := range intf.MethodIter() {
+		buf.WriteString("\t" + method.String() + "\n")
+	}
+
+	buf.WriteString("}")
+
+	return buf.String()
 }
 
 func (intf *InterfaceType) Dump() string {
-	return AstDump(intf.InterfaceType)
+	return astDump(intf.InterfaceType)
+}
+
+func (intf *InterfaceType) MethodIter() MethodIter {
+	c := make(chan *Method)
+
+	go func() {
+		defer close(c)
+
+		for _, field := range intf.InterfaceType.Methods.List {
+			if ty, ok := field.Type.(*ast.FuncType); ok {
+				for _, ident := range field.Names {
+					c <- &Method{&Field{field}, ident, &FuncType{ty}}
+				}
+			}
+		}
+	}()
+
+	return c
 }
 
 func (intf *InterfaceType) Method(name string) *Method {
-	for _, field := range intf.InterfaceType.Methods.List {
-		if ty, ok := field.Type.(*ast.FuncType); ok {
-			for _, method := range field.Names {
-				if method.Name == name {
-					return &Method{
-						intf, field, method, ty,
-					}
-				}
-			}
+	for method := range intf.MethodIter() {
+		if method.Name() == name {
+			return method
 		}
 	}
 
@@ -252,48 +229,30 @@ func (intf *InterfaceType) Method(name string) *Method {
 }
 
 func (intf *InterfaceType) Methods() MethodMap {
-	items := make(MethodMap)
+	methods := make(MethodMap)
 
-	for _, field := range intf.InterfaceType.Methods.List {
-		if ty, ok := field.Type.(*ast.FuncType); ok {
-			for _, ident := range field.Names {
-				items[ident.Name] = &Method{
-					intf, field, ident, ty,
-				}
-			}
-		}
+	for method := range intf.MethodIter() {
+		methods[method.Name()] = method
 	}
 
-	return items
+	return methods
 }
 
+type MethodIter <-chan *Method    // +iter
 type MethodMap map[string]*Method // +map
 
 type Method struct {
-	*InterfaceType
-	*ast.Field
+	*Field
 	*ast.Ident
-	*ast.FuncType
+	*FuncType
 }
 
 func (m *Method) Name() string {
 	return m.Ident.Name
 }
 
-func (m *Method) Tag() reflect.StructTag {
-	if m.Field.Tag == nil {
-		return ""
-	}
-
-	return reflect.StructTag(m.Field.Tag.Value)
-}
-
-type StructIter <-chan *StructDef    // +iter
-type StructMap map[string]*StructDef // +map
-
-type StructDef struct {
-	*TypeSpec
-	*StructType
+func (m *Method) String() string {
+	return fmt.Sprintf("%s%s", m.Name(), m.FuncType)
 }
 
 type StructType struct {
@@ -305,11 +264,11 @@ func (s *StructType) String() string {
 }
 
 func (s *StructType) Dump() string {
-	return AstDump(s.StructType)
+	return astDump(s.StructType)
 }
 
 func (s *StructType) Fields() FieldList {
-	return AsFieldList(s.StructType.Fields)
+	return asFieldList(s.StructType.Fields)
 }
 
 func (s *StructType) NamedField(name string) *NamedField {
@@ -333,7 +292,7 @@ func (s *StructType) NamedField(name string) *NamedField {
 }
 
 func (s *StructType) NamedFields() NamedFieldMap {
-	return AsNamedFieldMap(s.StructType.Fields)
+	return asNamedFieldMap(s.StructType.Fields)
 }
 
 type FieldList []*Field // +list
@@ -348,7 +307,7 @@ func (fields FieldList) String() string {
 	return strings.Join(strs, ", ")
 }
 
-func AsFieldList(fields *ast.FieldList) (items FieldList) {
+func asFieldList(fields *ast.FieldList) (items FieldList) {
 	if fields != nil && fields.List != nil {
 		for _, field := range fields.List {
 			items = append(items, &Field{field})
@@ -360,7 +319,7 @@ func AsFieldList(fields *ast.FieldList) (items FieldList) {
 
 type NamedFieldMap map[string]*NamedField // +map
 
-func AsNamedFieldMap(fields *ast.FieldList) NamedFieldMap {
+func asNamedFieldMap(fields *ast.FieldList) NamedFieldMap {
 	items := make(NamedFieldMap)
 
 	if fields != nil && fields.List != nil {
@@ -388,7 +347,7 @@ func (f *Field) Path() *Path {
 }
 
 func (f *Field) Type() Expr {
-	return AsExpr(f.Field.Type)
+	return asExpr(f.Field.Type)
 }
 
 func (f *Field) Tag() reflect.StructTag {
@@ -416,7 +375,7 @@ func (f *Field) String() string {
 }
 
 func (f *Field) Dump() string {
-	return AstDump(f.Field)
+	return astDump(f.Field)
 }
 
 type NamedField struct {
@@ -438,15 +397,6 @@ func (f *NamedField) String() string {
 	}
 
 	return f.Type().String()
-}
-
-type ImportDeclIter <-chan *ImportDecl    // +iter
-type ImportDeclMap map[string]*ImportDecl // +map
-
-type ImportDecl struct {
-	*File
-	*GenDecl
-	*ImportSpec
 }
 
 type ImportSpec struct {
@@ -478,11 +428,11 @@ type FuncType struct {
 }
 
 func (f *FuncType) Params() (params FieldList) {
-	return AsFieldList(f.FuncType.Params)
+	return asFieldList(f.FuncType.Params)
 }
 
 func (f *FuncType) Results() (results FieldList) {
-	return AsFieldList(f.FuncType.Results)
+	return asFieldList(f.FuncType.Results)
 }
 
 func (f *FuncType) String() string {
@@ -504,63 +454,7 @@ func (f *FuncType) String() string {
 }
 
 func (f *FuncType) Dump() string {
-	return AstDump(f.FuncType)
-}
-
-type FuncDeclIter <-chan *FuncDecl    // +iter
-type FuncDeclMap map[string]*FuncDecl // +map
-
-type FuncDecl struct {
-	*ast.FuncDecl
-	*FuncType
-}
-
-func (f *FuncDecl) Name() string {
-	return f.FuncDecl.Name.Name
-}
-
-func (f *FuncDecl) IsFunc() bool {
-	return f.FuncDecl.Recv == nil
-}
-
-func (f *FuncDecl) IsMethod() bool {
-	return f.FuncDecl.Recv != nil
-}
-
-func (f *FuncDecl) Recv() *NamedField {
-	recv := f.FuncDecl.Recv
-
-	if recv != nil && len(recv.List) > 0 {
-		field := recv.List[0]
-
-		var ident *ast.Ident
-		if len(field.Names) > 0 {
-			ident = field.Names[0]
-		}
-
-		return &NamedField{&Field{field}, ident}
-	}
-
-	return nil
-}
-
-func (f *FuncDecl) String() string {
-	buf := new(bytes.Buffer)
-
-	buf.WriteString("func ")
-
-	if recv := f.Recv(); recv != nil {
-		buf.WriteString(fmt.Sprintf("(%s) ", recv))
-	}
-
-	buf.WriteString(f.Name())
-	buf.WriteString(f.FuncType.String())
-
-	return buf.String()
-}
-
-func (f *FuncDecl) Dump() string {
-	return AstDump(f.FuncDecl)
+	return astDump(f.FuncType)
 }
 
 type ValueSpecMap map[string]*ValueSpec // +map
@@ -578,12 +472,12 @@ func (v *ValueSpec) Names() (names []string) {
 }
 
 func (v *ValueSpec) Type() Expr {
-	return AsExpr(v.ValueSpec.Type)
+	return asExpr(v.ValueSpec.Type)
 }
 
 func (v *ValueSpec) Values() (values []Expr) {
 	for _, value := range v.ValueSpec.Values {
-		values = append(values, AsExpr(value))
+		values = append(values, asExpr(value))
 	}
 
 	return
@@ -604,12 +498,12 @@ func (v *ValueSpec) String() string {
 	switch len(v.ValueSpec.Values) {
 	case 0:
 	case 1:
-		fmt.Fprintf(buf, " = %s", AsExpr(v.ValueSpec.Values[0]))
+		fmt.Fprintf(buf, " = %s", asExpr(v.ValueSpec.Values[0]))
 	default:
 		var values []string
 
 		for _, value := range v.ValueSpec.Values {
-			values = append(values, AsExpr(value).String())
+			values = append(values, asExpr(value).String())
 		}
 
 		fmt.Fprintf(buf, " = (%s)", strings.Join(values, ", "))
@@ -619,33 +513,7 @@ func (v *ValueSpec) String() string {
 }
 
 func (v *ValueSpec) Dump() string {
-	return AstDump(v.ValueSpec)
-}
-
-type ConstDeclIter <-chan *ConstDecl    // +iter
-type ConstDeclMap map[string]*ConstDecl // +map
-
-type ConstDecl struct {
-	*File
-	*GenDecl
-	*ValueSpec
-}
-
-func (c *ConstDecl) String() string {
-	return "const " + c.ValueSpec.String()
-}
-
-type VarDeclIter <-chan *VarDecl    // +iter
-type VarDeclMap map[string]*VarDecl // +map
-
-type VarDecl struct {
-	*File
-	*GenDecl
-	*ValueSpec
-}
-
-func (v *VarDecl) String() string {
-	return "var " + v.ValueSpec.String()
+	return astDump(v.ValueSpec)
 }
 
 type Labeled struct {
@@ -654,7 +522,7 @@ type Labeled struct {
 
 type Tags map[string]string // +map
 
-func ExtractTags(groups ...*ast.CommentGroup) Tags {
+func extractTags(groups ...*ast.CommentGroup) Tags {
 	tags := make(Tags)
 
 	for _, group := range groups {

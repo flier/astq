@@ -14,7 +14,11 @@ type Expr interface {
 	fmt.Stringer
 }
 
-func AsExpr(e ast.Expr) Expr {
+func FromExpr(expr ast.Expr) Expr {
+	return asExpr(expr)
+}
+
+func asExpr(e ast.Expr) Expr {
 	if e == nil {
 		return nil
 	}
@@ -53,7 +57,7 @@ func AsExpr(e ast.Expr) Expr {
 	case *ast.KeyValueExpr:
 		return &KeyValueExpr{&AstExpr{e}, expr}
 	case *ast.ArrayType:
-		return &ArrayExpr{&AstExpr{e}, &Array{expr}}
+		return &ArrayExpr{&AstExpr{e}, &ArrayType{expr}}
 	case *ast.StructType:
 		return &StructExpr{&AstExpr{e}, &StructType{expr}}
 	case *ast.FuncType:
@@ -61,7 +65,7 @@ func AsExpr(e ast.Expr) Expr {
 	case *ast.InterfaceType:
 		return &InterfaceExpr{&AstExpr{e}, &InterfaceType{expr}}
 	case *ast.MapType:
-		return &MapExpr{&AstExpr{e}, &Map{expr}}
+		return &MapExpr{&AstExpr{e}, &MapType{expr}}
 	case *ast.ChanType:
 		return &ChanExpr{&AstExpr{e}, &ChanType{expr}}
 	default:
@@ -74,7 +78,7 @@ type AstExpr struct {
 }
 
 func (e *AstExpr) Dump() string {
-	return AstDump(e.Expr)
+	return astDump(e.Expr)
 }
 
 func (e *AstExpr) Kind() reflect.Kind {
@@ -311,7 +315,7 @@ type Object struct {
 }
 
 func (o *Object) Dump() string {
-	return AstDump(o.Object)
+	return astDump(o.Object)
 }
 
 func (obj *Object) IsPackage() bool  { return obj.Kind == ast.Pkg }
@@ -354,7 +358,7 @@ type Ellipsis struct {
 }
 
 func (e *Ellipsis) Elem() Expr {
-	return AsExpr(e.Ellipsis.Elt)
+	return asExpr(e.Ellipsis.Elt)
 }
 
 func (e *Ellipsis) String() string {
@@ -448,7 +452,7 @@ type CompositeLit struct {
 
 func (lit *CompositeLit) Elems() (elems []Expr) {
 	for _, elem := range lit.CompositeLit.Elts {
-		elems = append(elems, AsExpr(elem))
+		elems = append(elems, asExpr(elem))
 	}
 
 	return
@@ -458,7 +462,7 @@ func (lit *CompositeLit) String() string {
 	var elems []string
 
 	for _, elem := range lit.CompositeLit.Elts {
-		elems = append(elems, (AsExpr(elem)).String())
+		elems = append(elems, (asExpr(elem)).String())
 	}
 
 	return fmt.Sprintf("{ %s }", strings.Join(elems, ", "))
@@ -470,7 +474,7 @@ type ParenExpr struct {
 }
 
 func (e *ParenExpr) Elem() Expr {
-	return AsExpr(e.ParenExpr.X)
+	return asExpr(e.ParenExpr.X)
 }
 
 func (e *ParenExpr) String() string {
@@ -483,7 +487,7 @@ type SelectorExpr struct {
 }
 
 func (e *SelectorExpr) Target() Expr {
-	return AsExpr(e.SelectorExpr.X)
+	return asExpr(e.SelectorExpr.X)
 }
 
 func (e *SelectorExpr) Selector() *Ident {
@@ -500,11 +504,11 @@ type IndexExpr struct {
 }
 
 func (e *IndexExpr) Target() Expr {
-	return AsExpr(e.IndexExpr.X)
+	return asExpr(e.IndexExpr.X)
 }
 
 func (e *IndexExpr) Index() Expr {
-	return AsExpr(e.IndexExpr.Index)
+	return asExpr(e.IndexExpr.Index)
 }
 
 func (e *IndexExpr) String() string {
@@ -517,19 +521,19 @@ type SliceExpr struct {
 }
 
 func (e *SliceExpr) Target() Expr {
-	return AsExpr(e.SliceExpr.X)
+	return asExpr(e.SliceExpr.X)
 }
 
 func (e *SliceExpr) Low() Expr {
-	return AsExpr(e.SliceExpr.Low)
+	return asExpr(e.SliceExpr.Low)
 }
 
 func (e *SliceExpr) High() Expr {
-	return AsExpr(e.SliceExpr.High)
+	return asExpr(e.SliceExpr.High)
 }
 
 func (e *SliceExpr) Max() Expr {
-	return AsExpr(e.SliceExpr.Max)
+	return asExpr(e.SliceExpr.Max)
 }
 
 func (e *SliceExpr) String() string {
@@ -558,11 +562,11 @@ type TypeAssertExpr struct {
 }
 
 func (e *TypeAssertExpr) Target() Expr {
-	return AsExpr(e.TypeAssertExpr.X)
+	return asExpr(e.TypeAssertExpr.X)
 }
 
 func (e *TypeAssertExpr) Type() Expr {
-	return AsExpr(e.TypeAssertExpr.Type)
+	return asExpr(e.TypeAssertExpr.Type)
 }
 
 func (e *TypeAssertExpr) String() string {
@@ -581,7 +585,7 @@ type CallExpr struct {
 }
 
 func (e *CallExpr) Func() Expr {
-	return AsExpr(e.CallExpr.Fun)
+	return asExpr(e.CallExpr.Fun)
 }
 
 func (e *CallExpr) String() string {
@@ -594,7 +598,7 @@ type StarExpr struct {
 }
 
 func (e *StarExpr) Target() Expr {
-	return AsExpr(e.StarExpr.X)
+	return asExpr(e.StarExpr.X)
 }
 
 func (e *StarExpr) String() string {
@@ -611,7 +615,7 @@ func (e *UnaryExpr) Op() token.Token {
 }
 
 func (e *UnaryExpr) Elem() Expr {
-	return AsExpr(e.UnaryExpr.X)
+	return asExpr(e.UnaryExpr.X)
 }
 
 func (e *UnaryExpr) String() string {
@@ -628,11 +632,11 @@ func (e *BinaryExpr) Op() token.Token {
 }
 
 func (e *BinaryExpr) Left() Expr {
-	return AsExpr(e.BinaryExpr.X)
+	return asExpr(e.BinaryExpr.X)
 }
 
 func (e *BinaryExpr) Right() Expr {
-	return AsExpr(e.BinaryExpr.Y)
+	return asExpr(e.BinaryExpr.Y)
 }
 
 func (e *BinaryExpr) String() string {
@@ -645,11 +649,11 @@ type KeyValueExpr struct {
 }
 
 func (e *KeyValueExpr) Key() Expr {
-	return AsExpr(e.KeyValueExpr.Key)
+	return asExpr(e.KeyValueExpr.Key)
 }
 
 func (e *KeyValueExpr) Value() Expr {
-	return AsExpr(e.KeyValueExpr.Value)
+	return asExpr(e.KeyValueExpr.Value)
 }
 
 func (e *KeyValueExpr) String() string {
@@ -658,7 +662,7 @@ func (e *KeyValueExpr) String() string {
 
 type ArrayExpr struct {
 	*AstExpr
-	*Array
+	*ArrayType
 }
 
 type StructExpr struct {
@@ -673,7 +677,7 @@ type FuncExpr struct {
 
 type MapExpr struct {
 	*AstExpr
-	*Map
+	*MapType
 }
 
 type ChanExpr struct {

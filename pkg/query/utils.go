@@ -6,7 +6,7 @@ import (
 	"sort"
 )
 
-func AstDump(x interface{}) string {
+func astDump(x interface{}) string {
 	var buf bytes.Buffer
 
 	if err := ast.Fprint(&buf, nil, x, ast.NotNilFilter); err != nil {
