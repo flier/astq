@@ -59,13 +59,9 @@ func (f *File) TypeIter() TypeDeclIter {
 }
 
 func (f *File) TypeDecl(name string) *TypeDecl {
-	for ty := range f.TypeIter() {
-		if ty.Name() == name {
-			return ty
-		}
-	}
-
-	return nil
+	return f.TypeIter().Find(func(ty *TypeDecl) bool {
+		return ty.Name() == name
+	})
 }
 
 func (f *File) TypeDecls() TypeDeclMap {
@@ -95,13 +91,9 @@ func (f *File) InterfaceIter() InterfaceIter {
 }
 
 func (f *File) Interface(name string) *InterfaceDef {
-	for intf := range f.InterfaceIter() {
-		if intf.Name() == name {
-			return intf
-		}
-	}
-
-	return nil
+	return f.InterfaceIter().Find(func(intf *InterfaceDef) bool {
+		return intf.Name() == name
+	})
 }
 
 func (f *File) Interfaces() InterfaceMap {
@@ -131,13 +123,9 @@ func (f *File) StructIter() StructIter {
 }
 
 func (f *File) Struct(name string) *StructDef {
-	for s := range f.StructIter() {
-		if s.Name() == name {
-			return s
-		}
-	}
-
-	return nil
+	return f.StructIter().Find(func(s *StructDef) bool {
+		return s.Name() == name
+	})
 }
 
 func (f *File) Structs() StructMap {
@@ -167,13 +155,9 @@ func (f *File) FuncIter() FuncDeclIter {
 }
 
 func (f *File) Func(name string) *FuncDecl {
-	for fd := range f.FuncIter() {
-		if fd.Name() == name {
-			return fd
-		}
-	}
-
-	return nil
+	return f.FuncIter().Find(func(f *FuncDecl) bool {
+		return f.Name() == name
+	})
 }
 
 func (f *File) Funcs() FuncDeclMap {
@@ -186,7 +170,7 @@ func (f *File) Funcs() FuncDeclMap {
 	return items
 }
 
-func (f *File) ImportIter() ImportDeclChan {
+func (f *File) ImportIter() ImportDeclIter {
 	c := make(chan *ImportDecl)
 
 	go func() {
@@ -207,13 +191,9 @@ func (f *File) ImportIter() ImportDeclChan {
 }
 
 func (f *File) Import(path string) *ImportDecl {
-	for i := range f.ImportIter() {
-		if i.Path() == path {
-			return i
-		}
-	}
-
-	return nil
+	return f.ImportIter().Find(func(i *ImportDecl) bool {
+		return i.Path() == path
+	})
 }
 
 func (f *File) Imports() ImportDeclMap {

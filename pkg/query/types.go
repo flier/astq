@@ -16,6 +16,7 @@ var (
 	whitespace = regexp.MustCompile("\\s")
 )
 
+//go:generate astgen -t ../../template/iter.tpl -p $GOFILE -o types_iter.go
 //go:generate astgen -t ../../template/map.tpl -p $GOFILE -o types_map.go
 
 type Named interface {
@@ -186,22 +187,39 @@ type ChanType struct {
 	*ast.ChanType
 }
 
-func (c *ChanType) Dir() ast.ChanDir {
-	return c.ChanType.Dir
+func (c *ChanType) Dir() reflect.ChanDir {
+	switch c.ChanType.Dir {
+	case ast.SEND:
+		return reflect.SendDir
+	case ast.RECV:
+		return reflect.RecvDir
+	case ast.SEND | ast.RECV:
+		return reflect.BothDir
+	default:
+		panic(c.ChanType.Dir)
+	}
 }
 
-func (c *ChanType) Value() Expr {
+func (c *ChanType) CanSend() bool {
+	return (c.ChanType.Dir & ast.SEND) == ast.SEND
+}
+
+func (c *ChanType) CanRecv() bool {
+	return (c.ChanType.Dir & ast.RECV) == ast.RECV
+}
+
+func (c *ChanType) Elem() Expr {
 	return AsExpr(c.ChanType.Value)
 }
 
 func (c *ChanType) String() string {
 	switch c.ChanType.Dir {
 	case ast.SEND:
-		return fmt.Sprintf("chan<- %s", c.Value())
+		return fmt.Sprintf("chan<- %s", c.Elem())
 	case ast.RECV:
-		return fmt.Sprintf("<-chan %s", c.Value())
+		return fmt.Sprintf("<-chan %s", c.Elem())
 	default:
-		return fmt.Sprintf("chan %s", c.Value())
+		return fmt.Sprintf("chan %s", c.Elem())
 	}
 }
 
@@ -371,7 +389,7 @@ func (f *Field) Tag() reflect.StructTag {
 	return reflect.StructTag(strings.Trim(f.Field.Tag.Value, "`"))
 }
 
-type ImportDeclChan <-chan *ImportDecl    // +iter
+type ImportDeclIter <-chan *ImportDecl    // +iter
 type ImportDeclMap map[string]*ImportDecl // +map
 
 type ImportDecl struct {
