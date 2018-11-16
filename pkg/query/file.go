@@ -9,6 +9,7 @@ import (
 
 //go:generate astgen -t ../../template/iter.gogo -p $GOFILE -o file_iter.go
 //go:generate astgen -t ../../template/map.gogo -p $GOFILE -o file_map.go
+//go:generate astgen -t ../../template/tag.gogo -p $GOFILE -o file_tag.go
 
 type FileMap map[string]*File // +map
 
@@ -34,6 +35,10 @@ type GenDecl struct {
 	*ast.GenDecl
 }
 
+func (d *GenDecl) Tags() Tags {
+	return extractTags(d.GenDecl.Doc)
+}
+
 func (d *GenDecl) IsImport() bool { return d.GenDecl.Tok == token.IMPORT }
 func (d *GenDecl) IsConst() bool  { return d.GenDecl.Tok == token.CONST }
 func (d *GenDecl) IsType() bool   { return d.GenDecl.Tok == token.TYPE }
@@ -55,8 +60,10 @@ func (f *File) GenDeclIter() GenDeclIter {
 	return c
 }
 
-type TypeDeclIter <-chan *TypeDecl    // +iter
-type TypeDeclMap map[string]*TypeDecl // +map
+type TypeDeclIter <-chan *TypeDecl // +iter
+// +map
+// +tag
+type TypeDeclMap map[string]*TypeDecl
 
 type TypeDecl struct {
 	*File
@@ -65,19 +72,7 @@ type TypeDecl struct {
 }
 
 func (t *TypeDecl) Tags() Tags {
-	var docs []*ast.CommentGroup
-
-	if t.File != nil {
-		docs = append(docs, t.File.Doc)
-	}
-	if t.GenDecl != nil {
-		docs = append(docs, t.GenDecl.Doc)
-	}
-	if t.TypeSpec != nil {
-		docs = append(docs, t.TypeSpec.TypeSpec.Doc, t.TypeSpec.TypeSpec.Comment)
-	}
-
-	return extractTags(docs...)
+	return extractTags(t.File.Doc, t.GenDecl.Doc, t.TypeSpec.TypeSpec.Doc, t.TypeSpec.TypeSpec.Comment)
 }
 
 func (f *File) TypeIter() TypeDeclIter {
@@ -116,11 +111,13 @@ func (f *File) TypeDecls() TypeDeclMap {
 	return items
 }
 
-type InterfaceIter <-chan *InterfaceDef    // +iter
-type InterfaceMap map[string]*InterfaceDef // +map
+type InterfaceIter <-chan *InterfaceDef // +iter
+// +map
+// +tag
+type InterfaceMap map[string]*InterfaceDef
 
 type InterfaceDef struct {
-	*TypeSpec
+	*TypeDecl
 	*InterfaceType
 }
 
@@ -136,7 +133,7 @@ func (f *File) InterfaceIter() InterfaceIter {
 
 		for ty := range f.TypeIter() {
 			if ty.IsInterface() {
-				c <- &InterfaceDef{ty.TypeSpec, ty.AsInterface()}
+				c <- &InterfaceDef{ty, ty.AsInterface()}
 			}
 		}
 	}()
@@ -160,12 +157,71 @@ func (f *File) Interfaces() InterfaceMap {
 	return items
 }
 
-type StructIter <-chan *StructDef    // +iter
-type StructMap map[string]*StructDef // +map
+type StructIter <-chan *StructDef // +iter
+// +map
+// +tag
+type StructMap map[string]*StructDef
 
 type StructDef struct {
-	*TypeSpec
+	*TypeDecl
 	*StructType
+}
+
+func (s *StructDef) String() string {
+	return fmt.Sprintf("type %s %s", s.Name(), s.StructType)
+}
+
+func (s *StructDef) MethodIter() MethodIter {
+	c := make(chan *Method)
+
+	go func() {
+		defer close(c)
+
+		for fn := range s.File.FuncIter() {
+			recv := fn.Recv()
+
+			if recv == nil {
+				continue
+			}
+
+			switch expr := recv.Type().(type) {
+			case *StarExpr:
+				if expr.Target().String() == s.Name() {
+					c <- &Method{fn.FuncDecl.Name, fn.FuncType}
+				}
+			case *Ident:
+				if expr.Name() == s.Name() {
+					c <- &Method{fn.FuncDecl.Name, fn.FuncType}
+				}
+			}
+		}
+	}()
+
+	return c
+}
+
+func (s *StructDef) HasMethod(name string) bool {
+	return s.Method(name) != nil
+}
+
+func (s *StructDef) Method(name string) *Method {
+	for method := range s.MethodIter() {
+		if method.Name() == name {
+			return method
+		}
+	}
+
+	return nil
+}
+
+func (s *StructDef) Methods() MethodMap {
+	methods := make(MethodMap)
+
+	for method := range s.MethodIter() {
+		methods[method.Name()] = method
+	}
+
+	return methods
 }
 
 func (f *File) StructIter() StructIter {
@@ -176,7 +232,7 @@ func (f *File) StructIter() StructIter {
 
 		for ty := range f.TypeIter() {
 			if ty.IsStruct() {
-				c <- &StructDef{ty.TypeSpec, ty.AsStruct()}
+				c <- &StructDef{ty, ty.AsStruct()}
 			}
 		}
 	}()
@@ -200,10 +256,13 @@ func (f *File) Structs() StructMap {
 	return items
 }
 
-type FuncDeclIter <-chan *FuncDecl    // +iter
-type FuncDeclMap map[string]*FuncDecl // +map
+type FuncDeclIter <-chan *FuncDecl // +iter
+// +map
+// +tag
+type FuncDeclMap map[string]*FuncDecl
 
 type FuncDecl struct {
+	*File
 	*ast.FuncDecl
 	*FuncType
 }
@@ -218,6 +277,10 @@ func (f *FuncDecl) IsFunc() bool {
 
 func (f *FuncDecl) IsMethod() bool {
 	return f.FuncDecl.Recv != nil
+}
+
+func (f *FuncDecl) Tags() Tags {
+	return extractTags(f.File.Doc, f.FuncDecl.Doc)
 }
 
 func (f *FuncDecl) Recv() *NamedField {
@@ -247,7 +310,7 @@ func (f *FuncDecl) String() string {
 	}
 
 	buf.WriteString(f.Name())
-	buf.WriteString(f.FuncType.String())
+	buf.WriteString(f.FuncType.Signature().String())
 
 	return buf.String()
 }
@@ -264,7 +327,7 @@ func (f *File) FuncIter() FuncDeclIter {
 
 		for _, decl := range f.Decls {
 			if decl, ok := decl.(*ast.FuncDecl); ok {
-				c <- &FuncDecl{decl, &FuncType{decl.Type}}
+				c <- &FuncDecl{f, decl, &FuncType{decl.Type}}
 			}
 		}
 	}()
@@ -288,11 +351,12 @@ func (f *File) Funcs() FuncDeclMap {
 	return items
 }
 
-type ImportDeclIter <-chan *ImportDecl    // +iter
-type ImportDeclMap map[string]*ImportDecl // +map
+type ImportDeclIter <-chan *ImportDecl // +iter
+// +map
+// +tag
+type ImportDeclMap map[string]*ImportDecl
 
 type ImportDecl struct {
-	*File
 	*GenDecl
 	*ImportSpec
 }
@@ -307,7 +371,7 @@ func (f *File) ImportIter() ImportDeclIter {
 			if decl.IsImport() {
 				for _, spec := range decl.Specs {
 					if spec, ok := spec.(*ast.ImportSpec); ok {
-						c <- &ImportDecl{f, decl, &ImportSpec{spec}}
+						c <- &ImportDecl{decl, &ImportSpec{spec}}
 					}
 				}
 			}
@@ -333,11 +397,12 @@ func (f *File) Imports() ImportDeclMap {
 	return items
 }
 
-type ConstDeclIter <-chan *ConstDecl    // +iter
-type ConstDeclMap map[string]*ConstDecl // +map
+type ConstDeclIter <-chan *ConstDecl // +iter
+// +map
+// +tag
+type ConstDeclMap map[string]*ConstDecl
 
 type ConstDecl struct {
-	*File
 	*GenDecl
 	*ValueSpec
 }
@@ -356,7 +421,7 @@ func (f *File) ConstIter() ConstDeclIter {
 			if decl.IsConst() {
 				for _, spec := range decl.Specs {
 					if spec, ok := spec.(*ast.ValueSpec); ok {
-						c <- &ConstDecl{f, decl, &ValueSpec{spec}}
+						c <- &ConstDecl{decl, &ValueSpec{spec}}
 					}
 				}
 			}
@@ -390,11 +455,12 @@ func (f *File) Consts() ConstDeclMap {
 	return items
 }
 
-type VarDeclIter <-chan *VarDecl    // +iter
-type VarDeclMap map[string]*VarDecl // +map
+type VarDeclIter <-chan *VarDecl // +iter
+// +map
+// +tag
+type VarDeclMap map[string]*VarDecl
 
 type VarDecl struct {
-	*File
 	*GenDecl
 	*ValueSpec
 }
@@ -413,7 +479,7 @@ func (f *File) VarIter() VarDeclIter {
 			if decl.IsVar() {
 				for _, spec := range decl.Specs {
 					if spec, ok := spec.(*ast.ValueSpec); ok {
-						c <- &VarDecl{f, decl, &ValueSpec{spec}}
+						c <- &VarDecl{decl, &ValueSpec{spec}}
 					}
 				}
 			}

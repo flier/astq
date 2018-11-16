@@ -209,7 +209,7 @@ func (intf *InterfaceType) MethodIter() MethodIter {
 		for _, field := range intf.InterfaceType.Methods.List {
 			if ty, ok := field.Type.(*ast.FuncType); ok {
 				for _, ident := range field.Names {
-					c <- &Method{&Field{field}, ident, &FuncType{ty}}
+					c <- &Method{ident, &FuncType{ty}}
 				}
 			}
 		}
@@ -242,7 +242,6 @@ type MethodIter <-chan *Method    // +iter
 type MethodMap map[string]*Method // +map
 
 type Method struct {
-	*Field
 	*ast.Ident
 	*FuncType
 }
@@ -252,7 +251,7 @@ func (m *Method) Name() string {
 }
 
 func (m *Method) String() string {
-	return fmt.Sprintf("%s%s", m.Name(), m.FuncType)
+	return m.Name() + m.Signature().String()
 }
 
 type StructType struct {
@@ -260,7 +259,13 @@ type StructType struct {
 }
 
 func (s *StructType) String() string {
-	return fmt.Sprintf("struct {}")
+	var fields []string
+
+	for _, field := range s.Fields() {
+		fields = append(fields, "\t"+field.String())
+	}
+
+	return fmt.Sprintf("struct {\n%s\n}", strings.Join(fields, "\n"))
 }
 
 func (s *StructType) Dump() string {
@@ -271,16 +276,20 @@ func (s *StructType) Fields() FieldList {
 	return asFieldList(s.StructType.Fields)
 }
 
+func (s *StructType) HasField(name string) bool {
+	return s.NamedField(name) != nil
+}
+
 func (s *StructType) NamedField(name string) *NamedField {
-	for _, field := range s.StructType.Fields.List {
+	for _, field := range s.Fields() {
 		if len(field.Names) > 0 {
 			for _, ident := range field.Names {
 				if ident.Name == name {
-					return &NamedField{&Field{field}, ident}
+					return &NamedField{field, ident}
 				}
 			}
 		} else {
-			f := &NamedField{&Field{field}, nil}
+			f := &NamedField{field, nil}
 
 			if f.Name() == name {
 				return f
@@ -423,24 +432,16 @@ func (i *ImportSpec) String() string {
 	return fmt.Sprintf("import %v", i.ImportSpec.Path.Value)
 }
 
-type FuncType struct {
-	*ast.FuncType
+type Signature struct {
+	*FuncType
 }
 
-func (f *FuncType) Params() (params FieldList) {
-	return asFieldList(f.FuncType.Params)
-}
-
-func (f *FuncType) Results() (results FieldList) {
-	return asFieldList(f.FuncType.Results)
-}
-
-func (f *FuncType) String() string {
+func (s *Signature) String() string {
 	buf := new(bytes.Buffer)
 
-	buf.WriteString(fmt.Sprintf("(%s)", f.Params().String()))
+	buf.WriteString(fmt.Sprintf("(%s)", s.Params().String()))
 
-	results := f.Results()
+	results := s.Results()
 
 	switch len(results) {
 	case 0:
@@ -451,6 +452,34 @@ func (f *FuncType) String() string {
 	}
 
 	return buf.String()
+}
+
+type FuncType struct {
+	*ast.FuncType
+}
+
+func (f *FuncType) Params() FieldList {
+	return asFieldList(f.FuncType.Params)
+}
+
+func (f *FuncType) NamedParams() NamedFieldMap {
+	return asNamedFieldMap(f.FuncType.Params)
+}
+
+func (f *FuncType) Results() FieldList {
+	return asFieldList(f.FuncType.Results)
+}
+
+func (f *FuncType) NamedResults() NamedFieldMap {
+	return asNamedFieldMap(f.FuncType.Results)
+}
+
+func (f *FuncType) Signature() *Signature {
+	return &Signature{f}
+}
+
+func (f *FuncType) String() string {
+	return "func " + f.Signature().String()
 }
 
 func (f *FuncType) Dump() string {

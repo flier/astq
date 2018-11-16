@@ -297,3 +297,30 @@ func (h *Hello) World(name string, foo, bar bool) (ok bool, err error) {}
 	// func Hello(name string) string
 	// func (h *Hello) World(name string, foo, bar bool) (ok bool, err error)
 }
+func ExampleStructDef_Methods() {
+	f, _ := parser.ParseFile(token.NewFileSet(), "test.go", `
+
+package test
+
+type Point struct {
+	x, y float64
+}
+
+func Foo()
+
+func Bar(name string)
+
+func (p Point) Length() float64 {
+	return math.Sqrt(p.x * p.x + p.y * p.y)
+}
+
+func (p *Point) Scale(factor float64) {
+	p.x *= factor
+	p.y *= factor
+}
+`, parser.AllErrors)
+
+	fmt.Println(Sorted(FromFile(f).Struct("Point").Methods().Keys()))
+
+	// Output: [Length Scale]
+}

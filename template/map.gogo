@@ -74,19 +74,6 @@ func (m {{ .Name }}) WithSuffix(suffix string) {{ .Name }} {
 }
 {{ end }}
 
-{{/* if .Type.Value.IsPtr }}
-{{   if (and .Type.Value.Target.HasObject .Type.Value.Target.Object.IsType) }}
-func (m {{ .Name }}) WithTag(key string) {{ .Name }} {
-	return m.Filter(func(_key {{ .Type.Key }}, _value {{ .Type.Value }}) bool {
-		tags := ty.Tags()
-		_, found := tags[key]
-
-		return found
-	})
-}
-{{   end }}
-{{ end */}}
-
 {{     end }}
 {{   end }}
 {{ end }}
