@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"go/ast"
+	"go/token"
 	"io"
 	"path/filepath"
 	"reflect"
@@ -21,11 +22,23 @@ type Named interface {
 	Name() string
 }
 
+type GenDeclIter <-chan *GenDecl // +iter
+
+type GenDecl struct {
+	*ast.GenDecl
+}
+
+func (d *GenDecl) IsImport() bool { return d.GenDecl.Tok == token.IMPORT }
+func (d *GenDecl) IsConst() bool  { return d.GenDecl.Tok == token.CONST }
+func (d *GenDecl) IsType() bool   { return d.GenDecl.Tok == token.TYPE }
+func (d *GenDecl) IsVar() bool    { return d.GenDecl.Tok == token.VAR }
+
+type TypeDeclIter <-chan *TypeDecl    // +iter
 type TypeDeclMap map[string]*TypeDecl // +map
 
 type TypeDecl struct {
 	*File
-	*ast.GenDecl
+	*GenDecl
 	*TypeSpec
 }
 
@@ -83,6 +96,38 @@ func (t *TypeSpec) Comment() (doc []string) {
 	}
 
 	return
+}
+
+func (t *TypeSpec) IsInterface() bool {
+	_, ok := t.TypeSpec.Type.(*ast.InterfaceType)
+
+	return ok
+}
+
+func (t *TypeSpec) AsInterface() *InterfaceType {
+	it, ok := t.TypeSpec.Type.(*ast.InterfaceType)
+
+	if ok {
+		return &InterfaceType{it}
+	}
+
+	return nil
+}
+
+func (t *TypeSpec) IsStruct() bool {
+	_, ok := t.TypeSpec.Type.(*ast.StructType)
+
+	return ok
+}
+
+func (t *TypeSpec) AsStruct() *StructType {
+	st, ok := t.TypeSpec.Type.(*ast.StructType)
+
+	if ok {
+		return &StructType{st}
+	}
+
+	return nil
 }
 
 type Array struct {
@@ -164,6 +209,7 @@ func (c *ChanType) Dump() string {
 	return AstDump(c.ChanType)
 }
 
+type InterfaceIter <-chan *InterfaceDef    // +iter
 type InterfaceMap map[string]*InterfaceDef // +map
 
 type InterfaceDef struct {
@@ -236,6 +282,7 @@ func (m *Method) Tag() reflect.StructTag {
 	return reflect.StructTag(m.Field.Tag.Value)
 }
 
+type StructIter <-chan *StructDef    // +iter
 type StructMap map[string]*StructDef // +map
 
 type StructDef struct {
@@ -324,11 +371,12 @@ func (f *Field) Tag() reflect.StructTag {
 	return reflect.StructTag(strings.Trim(f.Field.Tag.Value, "`"))
 }
 
+type ImportDeclChan <-chan *ImportDecl    // +iter
 type ImportDeclMap map[string]*ImportDecl // +map
 
 type ImportDecl struct {
 	*File
-	*ast.GenDecl
+	*GenDecl
 	*ImportSpec
 }
 
@@ -356,33 +404,33 @@ func (i *ImportSpec) String() string {
 	return fmt.Sprintf("import %v", i.ImportSpec.Path.Value)
 }
 
+type FuncDeclIter <-chan *FuncDecl    // +iter
 type FuncDeclMap map[string]*FuncDecl // +map
 
 type FuncDecl struct {
 	*ast.FuncDecl
 }
 
+func (f *FuncDecl) Name() string {
+	return f.FuncDecl.Name.Name
+}
+
 type ValueSpecMap map[string]*ValueSpec // +map
 
 type ValueSpec struct {
 	*ast.ValueSpec
-	idx int
 }
 
-func (v *ValueSpec) Name() string {
-	return v.ValueSpec.Names[v.idx].Name
+func (v *ValueSpec) Names() (names []string) {
+	for _, ident := range v.ValueSpec.Names {
+		names = append(names, ident.Name)
+	}
+
+	return
 }
 
 func (v *ValueSpec) Type() Expr {
 	return AsExpr(v.ValueSpec.Type)
-}
-
-func (v *ValueSpec) Value() Expr {
-	if len(v.ValueSpec.Names) == len(v.ValueSpec.Values) && v.idx < len(v.ValueSpec.Values) {
-		return AsExpr(v.ValueSpec.Values[v.idx])
-	}
-
-	return nil
 }
 
 func (v *ValueSpec) Values() (values []Expr) {
@@ -396,16 +444,10 @@ func (v *ValueSpec) Values() (values []Expr) {
 func (v *ValueSpec) String() string {
 	buf := new(bytes.Buffer)
 
-	if len(v.Names) > 1 {
-		var names []string
-
-		for _, ident := range v.Names {
-			names = append(names, ident.Name)
-		}
-
-		io.WriteString(buf, fmt.Sprintf("(%s)", strings.Join(names, ", ")))
+	if len(v.ValueSpec.Names) > 1 {
+		io.WriteString(buf, fmt.Sprintf("(%s)", strings.Join(v.Names(), ", ")))
 	} else {
-		io.WriteString(buf, v.Name())
+		io.WriteString(buf, v.ValueSpec.Names[0].Name)
 	}
 
 	if ty := v.Type(); ty != nil {
@@ -428,11 +470,12 @@ func (v *ValueSpec) String() string {
 	return buf.String()
 }
 
+type ConstDeclIter <-chan *ConstDecl    // +iter
 type ConstDeclMap map[string]*ConstDecl // +map
 
 type ConstDecl struct {
 	*File
-	*ast.GenDecl
+	*GenDecl
 	*ValueSpec
 }
 
@@ -440,11 +483,12 @@ func (c *ConstDecl) String() string {
 	return "const " + c.ValueSpec.String()
 }
 
+type VarDeclIter <-chan *VarDecl    // +iter
 type VarDeclMap map[string]*VarDecl // +map
 
 type VarDecl struct {
 	*File
-	*ast.GenDecl
+	*GenDecl
 	*ValueSpec
 }
 

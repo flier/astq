@@ -150,19 +150,25 @@ var re, im = complexSqrt(-1)
 var _, found = entries[name]  // map lookup; only interested in "found"
 `, parser.AllErrors)
 
-	fmt.Println(
-		FromFile(f).Var("i").Type(),
-		FromFile(f).Var("U").Type(),
-		FromFile(f).Var("V").Type(),
-		FromFile(f).Var("W").Type(),
-		FromFile(f).Var("k").Type(), FromFile(f).Var("k").Value(),
-		FromFile(f).Var("x").Type(), FromFile(f).Var("x").Value(),
-		FromFile(f).Var("y").Type(), FromFile(f).Var("y").Value(),
-		FromFile(f).Var("u").Type(), FromFile(f).Var("u").Value(),
-		FromFile(f).Var("v").Type(), FromFile(f).Var("v").Value(),
-		FromFile(f).Var("s").Type(), FromFile(f).Var("s").Value(),
-	)
-	// Output: int float64 float64 float64 <nil> 0 float32 - 1 float32 - 2 <nil> 2.0 <nil> 3.0 <nil> "bar"
+	for _, name := range Sorted(FromFile(f).Vars().Keys()) {
+		v := FromFile(f).Var(name)
+
+		fmt.Println(name, v.Names(), v.Type(), v.Values())
+	}
+	// Output: U [U V W] float64 []
+	// V [U V W] float64 []
+	// W [U V W] float64 []
+	// _ [_ found] <nil> [entries[name]]
+	// found [_ found] <nil> [entries[name]]
+	// i [i] int []
+	// im [re im] <nil> [complexSqrt ()]
+	// k [k] <nil> [0]
+	// re [re im] <nil> [complexSqrt ()]
+	// s [u v s] <nil> [2.0 3.0 "bar"]
+	// u [u v s] <nil> [2.0 3.0 "bar"]
+	// v [u v s] <nil> [2.0 3.0 "bar"]
+	// x [x y] float32 [- 1 - 2]
+	// y [x y] float32 [- 1 - 2]
 }
 
 func ExampleFile_Vars() {

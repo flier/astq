@@ -2,7 +2,6 @@ package query
 
 import (
 	"go/ast"
-	"go/token"
 )
 
 type FileMap map[string]*File // +map
@@ -23,14 +22,46 @@ func (f *File) Tags() Tags {
 	return ExtractTags(f.File.Doc)
 }
 
-func (f *File) TypeDecl(name string) *TypeDecl {
-	for _, decl := range f.Decls {
-		if decl, ok := decl.(*ast.GenDecl); ok && decl.Tok == token.TYPE {
-			for _, spec := range decl.Specs {
-				if spec, ok := spec.(*ast.TypeSpec); ok && spec.Name.Name == name {
-					return &TypeDecl{f, decl, &TypeSpec{spec}}
+func (f *File) GenDeclIter() GenDeclIter {
+	c := make(chan *GenDecl)
+
+	go func() {
+		defer close(c)
+
+		for _, decl := range f.Decls {
+			if decl, ok := decl.(*ast.GenDecl); ok {
+				c <- &GenDecl{decl}
+			}
+		}
+	}()
+
+	return c
+}
+
+func (f *File) TypeIter() TypeDeclIter {
+	c := make(chan *TypeDecl)
+
+	go func() {
+		defer close(c)
+
+		for decl := range f.GenDeclIter() {
+			if decl.IsType() {
+				for _, spec := range decl.Specs {
+					if spec, ok := spec.(*ast.TypeSpec); ok {
+						c <- &TypeDecl{f, decl, &TypeSpec{spec}}
+					}
 				}
 			}
+		}
+	}()
+
+	return c
+}
+
+func (f *File) TypeDecl(name string) *TypeDecl {
+	for ty := range f.TypeIter() {
+		if ty.Name() == name {
+			return ty
 		}
 	}
 
@@ -40,29 +71,33 @@ func (f *File) TypeDecl(name string) *TypeDecl {
 func (f *File) TypeDecls() TypeDeclMap {
 	items := make(TypeDeclMap)
 
-	for _, decl := range f.Decls {
-		if decl, ok := decl.(*ast.GenDecl); ok && decl.Tok == token.TYPE {
-			for _, spec := range decl.Specs {
-				if spec, ok := spec.(*ast.TypeSpec); ok {
-					items[spec.Name.Name] = &TypeDecl{f, decl, &TypeSpec{spec}}
-				}
-			}
-		}
+	for ty := range f.TypeIter() {
+		items[ty.Name()] = ty
 	}
 
 	return items
 }
 
-func (f *File) Interface(name string) *InterfaceDef {
-	for _, decl := range f.Decls {
-		if decl, ok := decl.(*ast.GenDecl); ok && decl.Tok == token.TYPE {
-			for _, spec := range decl.Specs {
-				if spec, ok := spec.(*ast.TypeSpec); ok {
-					if it, ok := spec.Type.(*ast.InterfaceType); ok && spec.Name.Name == name {
-						return &InterfaceDef{&TypeSpec{spec}, &InterfaceType{it}}
-					}
-				}
+func (f *File) InterfaceIter() InterfaceIter {
+	c := make(chan *InterfaceDef)
+
+	go func() {
+		defer close(c)
+
+		for ty := range f.TypeIter() {
+			if ty.IsInterface() {
+				c <- &InterfaceDef{ty.TypeSpec, ty.AsInterface()}
 			}
+		}
+	}()
+
+	return c
+}
+
+func (f *File) Interface(name string) *InterfaceDef {
+	for intf := range f.InterfaceIter() {
+		if intf.Name() == name {
+			return intf
 		}
 	}
 
@@ -72,31 +107,33 @@ func (f *File) Interface(name string) *InterfaceDef {
 func (f *File) Interfaces() InterfaceMap {
 	items := make(InterfaceMap)
 
-	for _, decl := range f.Decls {
-		if decl, ok := decl.(*ast.GenDecl); ok && decl.Tok == token.TYPE {
-			for _, spec := range decl.Specs {
-				if spec, ok := spec.(*ast.TypeSpec); ok {
-					if it, ok := spec.Type.(*ast.InterfaceType); ok {
-						items[spec.Name.Name] = &InterfaceDef{&TypeSpec{spec}, &InterfaceType{it}}
-					}
-				}
-			}
-		}
+	for intf := range f.InterfaceIter() {
+		items[intf.Name()] = intf
 	}
 
 	return items
 }
 
-func (f *File) Struct(name string) *StructDef {
-	for _, decl := range f.Decls {
-		if decl, ok := decl.(*ast.GenDecl); ok && decl.Tok == token.TYPE {
-			for _, spec := range decl.Specs {
-				if spec, ok := spec.(*ast.TypeSpec); ok {
-					if st, ok := spec.Type.(*ast.StructType); ok && spec.Name.Name == name {
-						return &StructDef{&TypeSpec{spec}, &StructType{st}}
-					}
-				}
+func (f *File) StructIter() StructIter {
+	c := make(chan *StructDef)
+
+	go func() {
+		defer close(c)
+
+		for ty := range f.TypeIter() {
+			if ty.IsStruct() {
+				c <- &StructDef{ty.TypeSpec, ty.AsStruct()}
 			}
+		}
+	}()
+
+	return c
+}
+
+func (f *File) Struct(name string) *StructDef {
+	for s := range f.StructIter() {
+		if s.Name() == name {
+			return s
 		}
 	}
 
@@ -106,25 +143,33 @@ func (f *File) Struct(name string) *StructDef {
 func (f *File) Structs() StructMap {
 	items := make(StructMap)
 
-	for _, decl := range f.Decls {
-		if decl, ok := decl.(*ast.GenDecl); ok && decl.Tok == token.TYPE {
-			for _, spec := range decl.Specs {
-				if spec, ok := spec.(*ast.TypeSpec); ok {
-					if st, ok := spec.Type.(*ast.StructType); ok {
-						items[spec.Name.Name] = &StructDef{&TypeSpec{spec}, &StructType{st}}
-					}
-				}
-			}
-		}
+	for s := range f.StructIter() {
+		items[s.Name()] = s
 	}
 
 	return items
 }
 
+func (f *File) FuncIter() FuncDeclIter {
+	c := make(chan *FuncDecl)
+
+	go func() {
+		defer close(c)
+
+		for _, decl := range f.Decls {
+			if decl, ok := decl.(*ast.FuncDecl); ok {
+				c <- &FuncDecl{decl}
+			}
+		}
+	}()
+
+	return c
+}
+
 func (f *File) Func(name string) *FuncDecl {
-	for _, decl := range f.Decls {
-		if decl, ok := decl.(*ast.FuncDecl); ok && decl.Name.Name == name {
-			return &FuncDecl{decl}
+	for fd := range f.FuncIter() {
+		if fd.Name() == name {
+			return fd
 		}
 	}
 
@@ -134,27 +179,37 @@ func (f *File) Func(name string) *FuncDecl {
 func (f *File) Funcs() FuncDeclMap {
 	items := make(FuncDeclMap)
 
-	for _, decl := range f.Decls {
-		if decl, ok := decl.(*ast.FuncDecl); ok {
-			items[decl.Name.Name] = &FuncDecl{decl}
-		}
+	for fd := range f.FuncIter() {
+		items[fd.Name()] = fd
 	}
 
 	return items
 }
 
-func (f *File) Import(path string) *ImportDecl {
-	for _, decl := range f.Decls {
-		if decl, ok := decl.(*ast.GenDecl); ok && decl.Tok == token.IMPORT {
-			for _, spec := range decl.Specs {
-				if spec, ok := spec.(*ast.ImportSpec); ok {
-					is := &ImportDecl{f, decl, &ImportSpec{spec}}
+func (f *File) ImportIter() ImportDeclChan {
+	c := make(chan *ImportDecl)
 
-					if is.Path() == path {
-						return is
+	go func() {
+		defer close(c)
+
+		for decl := range f.GenDeclIter() {
+			if decl.IsImport() {
+				for _, spec := range decl.Specs {
+					if spec, ok := spec.(*ast.ImportSpec); ok {
+						c <- &ImportDecl{f, decl, &ImportSpec{spec}}
 					}
 				}
 			}
+		}
+	}()
+
+	return c
+}
+
+func (f *File) Import(path string) *ImportDecl {
+	for i := range f.ImportIter() {
+		if i.Path() == path {
+			return i
 		}
 	}
 
@@ -164,32 +219,38 @@ func (f *File) Import(path string) *ImportDecl {
 func (f *File) Imports() ImportDeclMap {
 	items := make(ImportDeclMap)
 
-	for _, decl := range f.Decls {
-		if decl, ok := decl.(*ast.GenDecl); ok && decl.Tok == token.IMPORT {
-			for _, spec := range decl.Specs {
-				if spec, ok := spec.(*ast.ImportSpec); ok {
-					is := &ImportDecl{f, decl, &ImportSpec{spec}}
-
-					items[is.Path()] = is
-				}
-			}
-		}
+	for i := range f.ImportIter() {
+		items[i.Path()] = i
 	}
 
 	return items
 }
 
-func (f *File) Const(name string) *ConstDecl {
-	for _, decl := range f.Decls {
-		if decl, ok := decl.(*ast.GenDecl); ok && decl.Tok == token.CONST {
-			for _, spec := range decl.Specs {
-				if spec, ok := spec.(*ast.ValueSpec); ok {
-					for idx, ident := range spec.Names {
-						if ident.Name == name {
-							return &ConstDecl{f, decl, &ValueSpec{spec, idx}}
-						}
+func (f *File) ConstIter() ConstDeclIter {
+	c := make(chan *ConstDecl)
+
+	go func() {
+		defer close(c)
+
+		for decl := range f.GenDeclIter() {
+			if decl.IsConst() {
+				for _, spec := range decl.Specs {
+					if spec, ok := spec.(*ast.ValueSpec); ok {
+						c <- &ConstDecl{f, decl, &ValueSpec{spec}}
 					}
 				}
+			}
+		}
+	}()
+
+	return c
+}
+
+func (f *File) Const(name string) *ConstDecl {
+	for decl := range f.ConstIter() {
+		for _, varName := range decl.Names() {
+			if varName == name {
+				return decl
 			}
 		}
 	}
@@ -200,32 +261,40 @@ func (f *File) Const(name string) *ConstDecl {
 func (f *File) Consts() ConstDeclMap {
 	items := make(ConstDeclMap)
 
-	for _, decl := range f.Decls {
-		if decl, ok := decl.(*ast.GenDecl); ok && decl.Tok == token.CONST {
-			for _, spec := range decl.Specs {
-				if spec, ok := spec.(*ast.ValueSpec); ok {
-					for idx, ident := range spec.Names {
-						items[ident.Name] = &ConstDecl{f, decl, &ValueSpec{spec, idx}}
-					}
-				}
-			}
+	for decl := range f.ConstIter() {
+		for _, name := range decl.Names() {
+			items[name] = decl
 		}
 	}
 
 	return items
 }
 
-func (f *File) Var(name string) *VarDecl {
-	for _, decl := range f.Decls {
-		if decl, ok := decl.(*ast.GenDecl); ok && decl.Tok == token.VAR {
-			for _, spec := range decl.Specs {
-				if spec, ok := spec.(*ast.ValueSpec); ok {
-					for idx, ident := range spec.Names {
-						if ident.Name == name {
-							return &VarDecl{f, decl, &ValueSpec{spec, idx}}
-						}
+func (f *File) VarIter() VarDeclIter {
+	c := make(chan *VarDecl)
+
+	go func() {
+		defer close(c)
+
+		for decl := range f.GenDeclIter() {
+			if decl.IsVar() {
+				for _, spec := range decl.Specs {
+					if spec, ok := spec.(*ast.ValueSpec); ok {
+						c <- &VarDecl{f, decl, &ValueSpec{spec}}
 					}
 				}
+			}
+		}
+	}()
+
+	return c
+}
+
+func (f *File) Var(name string) *VarDecl {
+	for decl := range f.VarIter() {
+		for _, varName := range decl.Names() {
+			if varName == name {
+				return decl
 			}
 		}
 	}
@@ -236,15 +305,9 @@ func (f *File) Var(name string) *VarDecl {
 func (f *File) Vars() VarDeclMap {
 	items := make(VarDeclMap)
 
-	for _, decl := range f.Decls {
-		if decl, ok := decl.(*ast.GenDecl); ok && decl.Tok == token.VAR {
-			for _, spec := range decl.Specs {
-				if spec, ok := spec.(*ast.ValueSpec); ok {
-					for idx, ident := range spec.Names {
-						items[ident.Name] = &VarDecl{f, decl, &ValueSpec{spec, idx}}
-					}
-				}
-			}
+	for decl := range f.VarIter() {
+		for _, name := range decl.Names() {
+			items[name] = decl
 		}
 	}
 
