@@ -249,3 +249,51 @@ const u, v float32 = 0, 3    // u = 0.0, v = 3.0
 	// const size int64 = 1024
 	// const zero = 0.0
 }
+
+func ExampleFile_Funcs() {
+	f, _ := parser.ParseFile(token.NewFileSet(), "test.go", `
+
+package test
+
+type Hello struct {}
+
+func (h *Hello) World() {}
+
+func min(x int, y int) int {
+	if x < y {
+		return x
+	}
+	return y
+}
+
+func flushICache(begin, end uintptr)  // implemented externally
+`, parser.AllErrors)
+
+	fmt.Println(Sorted(FromFile(f).Funcs().Keys()))
+
+	// Output: [World flushICache min]
+}
+
+func ExampleFile_Func() {
+	f, _ := parser.ParseFile(token.NewFileSet(), "test.go", `
+
+package test
+
+type Hello struct {}
+
+func Foo()
+func Bar(name string)
+func Hello(name string) string
+func (h *Hello) World(name string, foo, bar bool) (ok bool, err error) {}
+`, parser.AllErrors)
+
+	fmt.Println(FromFile(f).Func("Foo"))
+	fmt.Println(FromFile(f).Func("Bar"))
+	fmt.Println(FromFile(f).Func("Hello"))
+	fmt.Println(FromFile(f).Func("World"))
+
+	// Output: func Foo()
+	// func Bar(name string)
+	// func Hello(name string) string
+	// func (h *Hello) World(name string, foo, bar bool) (ok bool, err error)
+}

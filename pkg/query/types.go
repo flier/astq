@@ -171,18 +171,6 @@ func (m *Map) Dump() string {
 	return AstDump(m.MapType)
 }
 
-type FuncType struct {
-	*ast.FuncType
-}
-
-func (f *FuncType) String() string {
-	return fmt.Sprintf("func ()")
-}
-
-func (f *FuncType) Dump() string {
-	return AstDump(f.FuncType)
-}
-
 type ChanType struct {
 	*ast.ChanType
 }
@@ -325,11 +313,11 @@ func (s *StructType) Field(name string) *Field {
 		if len(field.Names) > 0 {
 			for _, ident := range field.Names {
 				if ident.Name == name {
-					return &Field{s, field, ident}
+					return &Field{field, ident}
 				}
 			}
 		} else {
-			f := &Field{s, field, nil}
+			f := &Field{field, nil}
 
 			if f.Name() == name {
 				return f
@@ -339,34 +327,56 @@ func (s *StructType) Field(name string) *Field {
 
 	return nil
 }
-
 func (s *StructType) Fields() FieldMap {
+	return AsFieldMap(s.StructType.Fields)
+}
+
+type FieldList []*Field // +list
+
+func (fields FieldList) String() string {
+	var strs []string
+
+	for _, field := range fields {
+		strs = append(strs, field.String())
+	}
+
+	return strings.Join(strs, ", ")
+}
+
+func AsFieldList(fields *ast.FieldList) (items FieldList) {
+	if fields != nil && fields.List != nil {
+		for _, field := range fields.List {
+			items = append(items, &Field{field, nil})
+		}
+	}
+
+	return
+}
+
+type FieldMap map[string]*Field // +map
+
+func AsFieldMap(fields *ast.FieldList) FieldMap {
 	items := make(FieldMap)
 
-	for _, field := range s.StructType.Fields.List {
-		if len(field.Names) > 0 {
-			for _, ident := range field.Names {
-				items[ident.Name] = &Field{s, field, ident}
+	if fields != nil && fields.List != nil {
+		for _, field := range fields.List {
+			if len(field.Names) > 0 {
+				for _, ident := range field.Names {
+					items[ident.Name] = &Field{field, ident}
+				}
+			} else {
+				f := &Field{field, nil}
+				items[f.Name()] = f
 			}
-		} else {
-			f := &Field{s, field, nil}
-			items[f.Name()] = f
 		}
 	}
 
 	return items
 }
 
-type FieldMap map[string]*Field // +map
-
 type Field struct {
-	*StructType
 	*ast.Field
 	*ast.Ident
-}
-
-func (f *Field) Path() *Path {
-	return &Path{f.Field.Type}
 }
 
 func (f *Field) Name() string {
@@ -375,6 +385,10 @@ func (f *Field) Name() string {
 	}
 
 	return f.Path().Last()
+}
+
+func (f *Field) Path() *Path {
+	return &Path{f.Field.Type}
 }
 
 func (f *Field) Type() Expr {
@@ -387,6 +401,26 @@ func (f *Field) Tag() reflect.StructTag {
 	}
 
 	return reflect.StructTag(strings.Trim(f.Field.Tag.Value, "`"))
+}
+
+func (f *Field) String() string {
+	ty := f.Type()
+
+	if f.Names == nil && f.Ident == nil {
+		return ty.String()
+	}
+
+	var names []string
+
+	if f.Ident != nil {
+		names = append(names, f.Ident.Name)
+	} else {
+		for _, ident := range f.Names {
+			names = append(names, ident.Name)
+		}
+	}
+
+	return fmt.Sprintf("%s %s", strings.Join(names, ", "), ty)
 }
 
 type ImportDeclIter <-chan *ImportDecl    // +iter
@@ -422,6 +456,40 @@ func (i *ImportSpec) String() string {
 	return fmt.Sprintf("import %v", i.ImportSpec.Path.Value)
 }
 
+type FuncType struct {
+	*ast.FuncType
+}
+
+func (f *FuncType) Params() (params FieldList) {
+	return AsFieldList(f.FuncType.Params)
+}
+
+func (f *FuncType) Results() (results FieldList) {
+	return AsFieldList(f.FuncType.Results)
+}
+
+func (f *FuncType) String() string {
+	buf := new(bytes.Buffer)
+
+	buf.WriteString(fmt.Sprintf("(%s)", f.Params().String()))
+
+	results := f.Results()
+
+	switch len(results) {
+	case 0:
+	case 1:
+		buf.WriteString(" " + results.String())
+	default:
+		buf.WriteString(fmt.Sprintf(" (%s)", results.String()))
+	}
+
+	return buf.String()
+}
+
+func (f *FuncType) Dump() string {
+	return AstDump(f.FuncType)
+}
+
 type FuncDeclIter <-chan *FuncDecl    // +iter
 type FuncDeclMap map[string]*FuncDecl // +map
 
@@ -431,6 +499,50 @@ type FuncDecl struct {
 
 func (f *FuncDecl) Name() string {
 	return f.FuncDecl.Name.Name
+}
+
+func (f *FuncDecl) IsFunc() bool {
+	return f.FuncDecl.Recv == nil
+}
+
+func (f *FuncDecl) IsMethod() bool {
+	return f.FuncDecl.Recv != nil
+}
+
+func (f *FuncDecl) Recv() *Field {
+	recv := f.FuncDecl.Recv
+
+	if recv != nil && len(recv.List) > 0 {
+		field := recv.List[0]
+
+		var ident *ast.Ident
+		if len(field.Names) > 0 {
+			ident = field.Names[0]
+		}
+
+		return &Field{field, ident}
+	}
+
+	return nil
+}
+
+func (f *FuncDecl) Type() *FuncType {
+	return &FuncType{f.FuncDecl.Type}
+}
+
+func (f *FuncDecl) String() string {
+	buf := new(bytes.Buffer)
+
+	buf.WriteString("func ")
+
+	if recv := f.Recv(); recv != nil {
+		buf.WriteString(fmt.Sprintf("(%s) ", recv))
+	}
+
+	buf.WriteString(f.Name())
+	buf.WriteString(f.Type().String())
+
+	return buf.String()
 }
 
 type ValueSpecMap map[string]*ValueSpec // +map
