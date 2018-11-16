@@ -18,7 +18,7 @@ type S struct {
 
 `, parser.AllErrors)
 
-	fmt.Println(FromFile(f).Struct("S").Fields().WithPrefix("F").Keys())
+	fmt.Println(FromFile(f).Struct("S").NamedFields().WithPrefix("F").Keys())
 	// Output: [Foo]
 }
 
@@ -34,7 +34,7 @@ type S struct {
 
 `, parser.AllErrors)
 
-	fmt.Println(FromFile(f).Struct("S").Fields().WithSuffix("o").Keys())
+	fmt.Println(FromFile(f).Struct("S").NamedFields().WithSuffix("o").Keys())
 	// Output: [Foo]
 }
 
@@ -52,9 +52,9 @@ type S struct {
 `, parser.AllErrors)
 
 	fmt.Println(
-		FromFile(f).Struct("S").Fields().WithTagValue("color", "red").Keys(),
-		Sorted(FromFile(f).Struct("S").Fields().WithTag("color").Keys()),
-		FromFile(f).Struct("S").Fields().WithoutTag("color").Keys(),
+		FromFile(f).Struct("S").NamedFields().WithTagValue("color", "red").Keys(),
+		Sorted(FromFile(f).Struct("S").NamedFields().WithTag("color").Keys()),
+		FromFile(f).Struct("S").NamedFields().WithoutTag("color").Keys(),
 	)
 	// Output: [Foo] [Bar Foo] [Qux]
 }

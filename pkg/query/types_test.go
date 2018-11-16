@@ -32,7 +32,7 @@ type S struct {
 
 `, parser.AllErrors)
 
-	tag := FromFile(f).Struct("S").Field("F").Tag()
+	tag := FromFile(f).Struct("S").NamedField("F").Tag()
 
 	fmt.Println(tag, tag.Get("species"), tag.Get("color"))
 	// Output: species:"gopher" color:"blue" gopher blue

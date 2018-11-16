@@ -146,7 +146,7 @@ func (f *File) FuncIter() FuncDeclIter {
 
 		for _, decl := range f.Decls {
 			if decl, ok := decl.(*ast.FuncDecl); ok {
-				c <- &FuncDecl{decl}
+				c <- &FuncDecl{decl, &FuncType{decl.Type}}
 			}
 		}
 	}()

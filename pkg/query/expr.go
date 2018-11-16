@@ -337,7 +337,7 @@ func (obj *Object) Spec() Spec {
 	case ast.Var: // variable
 	case ast.Fun: // function or method
 		if decl, ok := obj.Decl.(*ast.FuncDecl); ok {
-			return &FuncDecl{decl}
+			return &FuncDecl{decl, &FuncType{decl.Type}}
 		}
 	case ast.Lbl: // label
 		if stmt, ok := obj.Decl.(*ast.LabeledStmt); ok {

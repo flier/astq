@@ -27,24 +27,24 @@ func (items TypeDeclMap) WithoutTag(key string) TypeDeclMap {
 	})
 }
 
-func (items FieldMap) WithTagValue(key, value string) FieldMap {
-	return items.Filter(func(name string, f *Field) bool {
+func (items NamedFieldMap) WithTagValue(key, value string) NamedFieldMap {
+	return items.Filter(func(name string, f *NamedField) bool {
 		v, found := f.Tag().Lookup(key)
 
 		return found && v == value
 	})
 }
 
-func (items FieldMap) WithTag(key string) FieldMap {
-	return items.Filter(func(name string, f *Field) bool {
+func (items NamedFieldMap) WithTag(key string) NamedFieldMap {
+	return items.Filter(func(name string, f *NamedField) bool {
 		_, found := f.Tag().Lookup(key)
 
 		return found
 	})
 }
 
-func (items FieldMap) WithoutTag(key string) FieldMap {
-	return items.Filter(func(name string, f *Field) bool {
+func (items NamedFieldMap) WithoutTag(key string) NamedFieldMap {
+	return items.Filter(func(name string, f *NamedField) bool {
 		_, found := f.Tag().Lookup(key)
 
 		return !found

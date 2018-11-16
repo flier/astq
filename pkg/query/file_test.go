@@ -77,8 +77,8 @@ type Foo struct {
 `, parser.AllErrors)
 
 	fmt.Println(
-		FromFile(f).Struct("Foo").Field("Closer").Path(),
-		FromFile(f).Struct("Foo").Field("Bar").Type(),
+		FromFile(f).Struct("Foo").NamedField("Closer").Path(),
+		FromFile(f).Struct("Foo").NamedField("Bar").Type(),
 	)
 	// Output: io.Closer string
 }

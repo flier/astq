@@ -308,16 +308,20 @@ func (s *StructType) Dump() string {
 	return AstDump(s.StructType)
 }
 
-func (s *StructType) Field(name string) *Field {
+func (s *StructType) Fields() FieldList {
+	return AsFieldList(s.StructType.Fields)
+}
+
+func (s *StructType) NamedField(name string) *NamedField {
 	for _, field := range s.StructType.Fields.List {
 		if len(field.Names) > 0 {
 			for _, ident := range field.Names {
 				if ident.Name == name {
-					return &Field{field, ident}
+					return &NamedField{&Field{field}, ident}
 				}
 			}
 		} else {
-			f := &Field{field, nil}
+			f := &NamedField{&Field{field}, nil}
 
 			if f.Name() == name {
 				return f
@@ -327,8 +331,9 @@ func (s *StructType) Field(name string) *Field {
 
 	return nil
 }
-func (s *StructType) Fields() FieldMap {
-	return AsFieldMap(s.StructType.Fields)
+
+func (s *StructType) NamedFields() NamedFieldMap {
+	return AsNamedFieldMap(s.StructType.Fields)
 }
 
 type FieldList []*Field // +list
@@ -346,26 +351,26 @@ func (fields FieldList) String() string {
 func AsFieldList(fields *ast.FieldList) (items FieldList) {
 	if fields != nil && fields.List != nil {
 		for _, field := range fields.List {
-			items = append(items, &Field{field, nil})
+			items = append(items, &Field{field})
 		}
 	}
 
 	return
 }
 
-type FieldMap map[string]*Field // +map
+type NamedFieldMap map[string]*NamedField // +map
 
-func AsFieldMap(fields *ast.FieldList) FieldMap {
-	items := make(FieldMap)
+func AsNamedFieldMap(fields *ast.FieldList) NamedFieldMap {
+	items := make(NamedFieldMap)
 
 	if fields != nil && fields.List != nil {
 		for _, field := range fields.List {
 			if len(field.Names) > 0 {
 				for _, ident := range field.Names {
-					items[ident.Name] = &Field{field, ident}
+					items[ident.Name] = &NamedField{&Field{field}, ident}
 				}
 			} else {
-				f := &Field{field, nil}
+				f := &NamedField{&Field{field}, nil}
 				items[f.Name()] = f
 			}
 		}
@@ -376,15 +381,6 @@ func AsFieldMap(fields *ast.FieldList) FieldMap {
 
 type Field struct {
 	*ast.Field
-	*ast.Ident
-}
-
-func (f *Field) Name() string {
-	if f.Ident != nil {
-		return f.Ident.Name
-	}
-
-	return f.Path().Last()
 }
 
 func (f *Field) Path() *Path {
@@ -406,21 +402,42 @@ func (f *Field) Tag() reflect.StructTag {
 func (f *Field) String() string {
 	ty := f.Type()
 
-	if f.Names == nil && f.Ident == nil {
+	if f.Names == nil {
 		return ty.String()
 	}
 
 	var names []string
 
-	if f.Ident != nil {
-		names = append(names, f.Ident.Name)
-	} else {
-		for _, ident := range f.Names {
-			names = append(names, ident.Name)
-		}
+	for _, ident := range f.Names {
+		names = append(names, ident.Name)
 	}
 
 	return fmt.Sprintf("%s %s", strings.Join(names, ", "), ty)
+}
+
+func (f *Field) Dump() string {
+	return AstDump(f.Field)
+}
+
+type NamedField struct {
+	*Field
+	*ast.Ident
+}
+
+func (f *NamedField) Name() string {
+	if f.Ident != nil {
+		return f.Ident.Name
+	}
+
+	return f.Path().Last()
+}
+
+func (f *NamedField) String() string {
+	if f.Ident != nil {
+		return fmt.Sprintf("%s %s", f.Ident.Name, f.Type())
+	}
+
+	return f.Type().String()
 }
 
 type ImportDeclIter <-chan *ImportDecl    // +iter
@@ -495,6 +512,7 @@ type FuncDeclMap map[string]*FuncDecl // +map
 
 type FuncDecl struct {
 	*ast.FuncDecl
+	*FuncType
 }
 
 func (f *FuncDecl) Name() string {
@@ -509,7 +527,7 @@ func (f *FuncDecl) IsMethod() bool {
 	return f.FuncDecl.Recv != nil
 }
 
-func (f *FuncDecl) Recv() *Field {
+func (f *FuncDecl) Recv() *NamedField {
 	recv := f.FuncDecl.Recv
 
 	if recv != nil && len(recv.List) > 0 {
@@ -520,14 +538,10 @@ func (f *FuncDecl) Recv() *Field {
 			ident = field.Names[0]
 		}
 
-		return &Field{field, ident}
+		return &NamedField{&Field{field}, ident}
 	}
 
 	return nil
-}
-
-func (f *FuncDecl) Type() *FuncType {
-	return &FuncType{f.FuncDecl.Type}
 }
 
 func (f *FuncDecl) String() string {
@@ -540,9 +554,13 @@ func (f *FuncDecl) String() string {
 	}
 
 	buf.WriteString(f.Name())
-	buf.WriteString(f.Type().String())
+	buf.WriteString(f.FuncType.String())
 
 	return buf.String()
+}
+
+func (f *FuncDecl) Dump() string {
+	return AstDump(f.FuncDecl)
 }
 
 type ValueSpecMap map[string]*ValueSpec // +map
@@ -598,6 +616,10 @@ func (v *ValueSpec) String() string {
 	}
 
 	return buf.String()
+}
+
+func (v *ValueSpec) Dump() string {
+	return AstDump(v.ValueSpec)
 }
 
 type ConstDeclIter <-chan *ConstDecl    // +iter

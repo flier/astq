@@ -70,69 +70,6 @@ func (m ConstDeclMap) WithSuffix(suffix string) ConstDeclMap {
 }
 
 // Keys returns a new slice containing the set of map keys. The order is unspecified.
-func (m FieldMap) Keys() (keys []string) {
-	for name := range m {
-		keys = append(keys, name)
-	}
-
-	return
-}
-
-// Values returns a new slice containing the set of map values. The order is unspecified.
-func (m FieldMap) Values() (values []*Field) {
-	for _, value := range m {
-		values = append(values, value)
-	}
-
-	return
-}
-
-// Contains reports whether key is within map.
-func (m FieldMap) Contains(key string) bool {
-	_, found := m[key]
-
-	return found
-}
-
-// Clone returns a shadow copy of map.
-func (m FieldMap) Clone() FieldMap {
-	cloned := make(FieldMap)
-
-	for key, value := range m {
-		cloned[key] = value
-	}
-
-	return cloned
-}
-
-// Filter filters the map to only include elements for which filter returns true.
-func (m FieldMap) Filter(filter func(key string, value *Field) bool) FieldMap {
-	filtered := make(FieldMap)
-
-	for key, value := range m {
-		if filter(key, value) {
-			filtered[key] = value
-		}
-	}
-
-	return filtered
-}
-
-// WithPrefix filters the map to only include elements for which contains prefix.
-func (m FieldMap) WithPrefix(prefix string) FieldMap {
-	return m.Filter(func(key string, value *Field) bool {
-		return strings.HasPrefix(key, prefix)
-	})
-}
-
-// WithSuffix filters the map to only include elements for which contains suffix.
-func (m FieldMap) WithSuffix(suffix string) FieldMap {
-	return m.Filter(func(key string, value *Field) bool {
-		return strings.HasSuffix(key, suffix)
-	})
-}
-
-// Keys returns a new slice containing the set of map keys. The order is unspecified.
 func (m FuncDeclMap) Keys() (keys []string) {
 	for name := range m {
 		keys = append(keys, name)
@@ -380,6 +317,69 @@ func (m MethodMap) WithPrefix(prefix string) MethodMap {
 // WithSuffix filters the map to only include elements for which contains suffix.
 func (m MethodMap) WithSuffix(suffix string) MethodMap {
 	return m.Filter(func(key string, value *Method) bool {
+		return strings.HasSuffix(key, suffix)
+	})
+}
+
+// Keys returns a new slice containing the set of map keys. The order is unspecified.
+func (m NamedFieldMap) Keys() (keys []string) {
+	for name := range m {
+		keys = append(keys, name)
+	}
+
+	return
+}
+
+// Values returns a new slice containing the set of map values. The order is unspecified.
+func (m NamedFieldMap) Values() (values []*NamedField) {
+	for _, value := range m {
+		values = append(values, value)
+	}
+
+	return
+}
+
+// Contains reports whether key is within map.
+func (m NamedFieldMap) Contains(key string) bool {
+	_, found := m[key]
+
+	return found
+}
+
+// Clone returns a shadow copy of map.
+func (m NamedFieldMap) Clone() NamedFieldMap {
+	cloned := make(NamedFieldMap)
+
+	for key, value := range m {
+		cloned[key] = value
+	}
+
+	return cloned
+}
+
+// Filter filters the map to only include elements for which filter returns true.
+func (m NamedFieldMap) Filter(filter func(key string, value *NamedField) bool) NamedFieldMap {
+	filtered := make(NamedFieldMap)
+
+	for key, value := range m {
+		if filter(key, value) {
+			filtered[key] = value
+		}
+	}
+
+	return filtered
+}
+
+// WithPrefix filters the map to only include elements for which contains prefix.
+func (m NamedFieldMap) WithPrefix(prefix string) NamedFieldMap {
+	return m.Filter(func(key string, value *NamedField) bool {
+		return strings.HasPrefix(key, prefix)
+	})
+}
+
+// WithSuffix filters the map to only include elements for which contains suffix.
+func (m NamedFieldMap) WithSuffix(suffix string) NamedFieldMap {
+	return m.Filter(func(key string, value *NamedField) bool {
 		return strings.HasSuffix(key, suffix)
 	})
 }
