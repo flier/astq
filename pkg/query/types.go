@@ -16,8 +16,8 @@ var (
 	whitespace = regexp.MustCompile("\\s")
 )
 
-//go:generate astgen -t ../../template/iter.tpl -p $GOFILE -o types_iter.go
-//go:generate astgen -t ../../template/map.tpl -p $GOFILE -o types_map.go
+//go:generate astgen -t ../../template/iter.gogo -p $GOFILE -o types_iter.go
+//go:generate astgen -t ../../template/map.gogo -p $GOFILE -o types_map.go
 
 type Named interface {
 	Name() string

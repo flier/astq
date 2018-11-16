@@ -26,7 +26,7 @@ import (
 )
 
 const (
-	tplExt = ".tpl"
+	tplExt = ".gogo"
 	goExt  = ".go"
 )
 
