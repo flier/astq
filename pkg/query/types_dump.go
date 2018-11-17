@@ -4,55 +4,70 @@ package query
 
 // Dump returns the AST node and skip the nil
 func (ast *ArrayType) Dump() string {
-	return astDump(ast.ArrayType)
+	return astDump(ast)
 }
 
 // Dump returns the AST node and skip the nil
 func (ast *ChanType) Dump() string {
-	return astDump(ast.ChanType)
+	return astDump(ast)
 }
 
 // Dump returns the AST node and skip the nil
 func (ast *Field) Dump() string {
-	return astDump(ast.Field)
+	return astDump(ast)
 }
 
 // Dump returns the AST node and skip the nil
 func (ast *FuncType) Dump() string {
-	return astDump(ast.FuncType)
+	return astDump(ast)
 }
 
 // Dump returns the AST node and skip the nil
 func (ast *ImportSpec) Dump() string {
-	return astDump(ast.ImportSpec)
+	return astDump(ast)
 }
 
 // Dump returns the AST node and skip the nil
 func (ast *InterfaceType) Dump() string {
-	return astDump(ast.InterfaceType)
+	return astDump(ast)
 }
 
 // Dump returns the AST node and skip the nil
 func (ast *Labeled) Dump() string {
-	return astDump(ast.LabeledStmt)
+	return astDump(ast)
 }
 
 // Dump returns the AST node and skip the nil
 func (ast *MapType) Dump() string {
-	return astDump(ast.MapType)
+	return astDump(ast)
+}
+
+// Dump returns the AST node and skip the nil
+func (ast *Method) Dump() string {
+	return astDump(ast)
+}
+
+// Dump returns the AST node and skip the nil
+func (ast *NamedField) Dump() string {
+	return astDump(ast)
+}
+
+// Dump returns the AST node and skip the nil
+func (ast *Signature) Dump() string {
+	return astDump(ast)
 }
 
 // Dump returns the AST node and skip the nil
 func (ast *StructType) Dump() string {
-	return astDump(ast.StructType)
+	return astDump(ast)
 }
 
 // Dump returns the AST node and skip the nil
 func (ast *TypeSpec) Dump() string {
-	return astDump(ast.TypeSpec)
+	return astDump(ast)
 }
 
 // Dump returns the AST node and skip the nil
 func (ast *ValueSpec) Dump() string {
-	return astDump(ast.ValueSpec)
+	return astDump(ast)
 }

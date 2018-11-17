@@ -195,7 +195,7 @@ func (intf *InterfaceType) MethodIter() MethodIter {
 		for _, field := range intf.InterfaceType.Methods.List {
 			if ty, ok := field.Type.(*ast.FuncType); ok {
 				for _, ident := range field.Names {
-					c <- &Method{ident, &FuncType{ty}}
+					c <- &Method{&FuncType{ty}, ident}
 				}
 			}
 		}
@@ -227,9 +227,10 @@ func (intf *InterfaceType) Methods() MethodMap {
 type MethodIter <-chan *Method    // +iter
 type MethodMap map[string]*Method // +map
 
+// +dump
 type Method struct {
-	*ast.Ident
 	*FuncType
+	*ast.Ident
 }
 
 func (m *Method) Name() string {
@@ -367,6 +368,7 @@ func (f *Field) String() string {
 	return fmt.Sprintf("%s %s", strings.Join(names, ", "), ty)
 }
 
+// +dump
 type NamedField struct {
 	*Field
 	*ast.Ident
@@ -413,6 +415,7 @@ func (i *ImportSpec) String() string {
 	return fmt.Sprintf("import %v", i.ImportSpec.Path.Value)
 }
 
+// +dump
 type Signature struct {
 	*FuncType
 }

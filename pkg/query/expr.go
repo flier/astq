@@ -10,6 +10,8 @@ import (
 	"unicode/utf8"
 )
 
+//go:generate astgen -t ../../template/dump.gogo -p $GOFILE -o expr_dump.go
+
 type Expr interface {
 	fmt.Stringer
 }
@@ -73,12 +75,9 @@ func asExpr(e ast.Expr) Expr {
 	}
 }
 
+// +dump
 type AstExpr struct {
 	ast.Expr
-}
-
-func (e *AstExpr) Dump() string {
-	return astDump(e.Expr)
 }
 
 func (e *AstExpr) Kind() reflect.Kind {

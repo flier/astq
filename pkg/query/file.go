@@ -64,6 +64,7 @@ type TypeDeclIter <-chan *TypeDecl // +iter
 // +tag
 type TypeDeclMap map[string]*TypeDecl
 
+// +dump TypeSpec
 type TypeDecl struct {
 	*File
 	*GenDecl
@@ -115,6 +116,7 @@ type InterfaceIter <-chan *InterfaceDef // +iter
 // +tag
 type InterfaceMap map[string]*InterfaceDef
 
+// +dump InterfaceType
 type InterfaceDef struct {
 	*TypeDecl
 	*InterfaceType
@@ -161,6 +163,7 @@ type StructIter <-chan *StructDef // +iter
 // +tag
 type StructMap map[string]*StructDef
 
+// +dump StructType
 type StructDef struct {
 	*TypeDecl
 	*StructType
@@ -186,11 +189,11 @@ func (s *StructDef) MethodIter() MethodIter {
 			switch expr := recv.Type().(type) {
 			case *StarExpr:
 				if expr.Target().String() == s.Name() {
-					c <- &Method{fn.FuncDecl.Name, fn.FuncType}
+					c <- &Method{fn.FuncType, fn.FuncDecl.Name}
 				}
 			case *Ident:
 				if expr.Name() == s.Name() {
-					c <- &Method{fn.FuncDecl.Name, fn.FuncType}
+					c <- &Method{fn.FuncType, fn.FuncDecl.Name}
 				}
 			}
 		}
@@ -260,6 +263,7 @@ type FuncDeclIter <-chan *FuncDecl // +iter
 // +tag
 type FuncDeclMap map[string]*FuncDecl
 
+// +dump FuncDecl
 type FuncDecl struct {
 	*File
 	*ast.FuncDecl
@@ -314,10 +318,6 @@ func (f *FuncDecl) String() string {
 	return buf.String()
 }
 
-func (f *FuncDecl) Dump() string {
-	return astDump(f.FuncDecl)
-}
-
 func (f *File) FuncIter() FuncDeclIter {
 	c := make(chan *FuncDecl)
 
@@ -355,6 +355,7 @@ type ImportDeclIter <-chan *ImportDecl // +iter
 // +tag
 type ImportDeclMap map[string]*ImportDecl
 
+// +dump ImportSpec
 type ImportDecl struct {
 	*GenDecl
 	*ImportSpec
@@ -401,6 +402,7 @@ type ConstDeclIter <-chan *ConstDecl // +iter
 // +tag
 type ConstDeclMap map[string]*ConstDecl
 
+// +dump ValueSpec
 type ConstDecl struct {
 	*GenDecl
 	*ValueSpec
@@ -459,6 +461,7 @@ type VarDeclIter <-chan *VarDecl // +iter
 // +tag
 type VarDeclMap map[string]*VarDecl
 
+// +dump ValueSpec
 type VarDecl struct {
 	*GenDecl
 	*ValueSpec

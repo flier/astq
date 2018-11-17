@@ -5,8 +5,12 @@ package {{ .Package.Name }}
 {{ with .File }}
 {{   range ( .Structs.WithTag "dump" ) }}
 // Dump returns the AST node and skip the nil
-func (ast *{{ .Name }}) Dump() string {
-    return astDump(ast.{{ (index .Type.Fields 0).Path.Last }})
+func (ast *{{ .Name }}) Dump() string {    
+    {{- if .Tags.dump -}}
+    return astDump(ast.{{ .Tags.dump }})
+    {{ else }}
+    return astDump(ast)
+    {{- end -}}
 }
 {{   end}}
 {{ end }}
