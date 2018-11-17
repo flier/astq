@@ -15,6 +15,7 @@ var (
 	whitespace = regexp.MustCompile("\\s")
 )
 
+//go:generate astgen -t ../../template/dump.gogo -p $GOFILE -o types_dump.go
 //go:generate astgen -t ../../template/iter.gogo -p $GOFILE -o types_iter.go
 //go:generate astgen -t ../../template/map.gogo -p $GOFILE -o types_map.go
 
@@ -22,6 +23,7 @@ type Named interface {
 	Name() string
 }
 
+// +dump
 type TypeSpec struct {
 	*ast.TypeSpec
 }
@@ -36,10 +38,6 @@ func (t *TypeSpec) Type() Expr {
 
 func (t *TypeSpec) String() string {
 	return fmt.Sprintf("type %s %s", t.Name(), t.Type())
-}
-
-func (t *TypeSpec) Dump() string {
-	return astDump(t.TypeSpec)
 }
 
 func (t *TypeSpec) Doc() (doc []string) {
@@ -94,6 +92,7 @@ func (t *TypeSpec) AsStruct() *StructType {
 	return nil
 }
 
+// +dump
 type ArrayType struct {
 	*ast.ArrayType
 }
@@ -110,10 +109,7 @@ func (a *ArrayType) String() string {
 	return fmt.Sprintf("[]%s", a.Elem())
 }
 
-func (a *ArrayType) Dump() string {
-	return astDump(a.ArrayType)
-}
-
+// +dump
 type MapType struct {
 	*ast.MapType
 }
@@ -130,10 +126,7 @@ func (m *MapType) String() string {
 	return fmt.Sprintf("map[%s]%s", m.Key(), m.Value())
 }
 
-func (m *MapType) Dump() string {
-	return astDump(m.MapType)
-}
-
+// +dump
 type ChanType struct {
 	*ast.ChanType
 }
@@ -174,10 +167,7 @@ func (c *ChanType) String() string {
 	}
 }
 
-func (c *ChanType) Dump() string {
-	return astDump(c.ChanType)
-}
-
+// +dump
 type InterfaceType struct {
 	*ast.InterfaceType
 }
@@ -194,10 +184,6 @@ func (intf *InterfaceType) String() string {
 	buf.WriteString("}")
 
 	return buf.String()
-}
-
-func (intf *InterfaceType) Dump() string {
-	return astDump(intf.InterfaceType)
 }
 
 func (intf *InterfaceType) MethodIter() MethodIter {
@@ -254,6 +240,7 @@ func (m *Method) String() string {
 	return m.Name() + m.Signature().String()
 }
 
+// +dump
 type StructType struct {
 	*ast.StructType
 }
@@ -266,10 +253,6 @@ func (s *StructType) String() string {
 	}
 
 	return fmt.Sprintf("struct {\n%s\n}", strings.Join(fields, "\n"))
-}
-
-func (s *StructType) Dump() string {
-	return astDump(s.StructType)
 }
 
 func (s *StructType) Fields() FieldList {
@@ -347,6 +330,7 @@ func asNamedFieldMap(fields *ast.FieldList) NamedFieldMap {
 	return items
 }
 
+// +dump
 type Field struct {
 	*ast.Field
 }
@@ -383,10 +367,6 @@ func (f *Field) String() string {
 	return fmt.Sprintf("%s %s", strings.Join(names, ", "), ty)
 }
 
-func (f *Field) Dump() string {
-	return astDump(f.Field)
-}
-
 type NamedField struct {
 	*Field
 	*ast.Ident
@@ -408,6 +388,7 @@ func (f *NamedField) String() string {
 	return f.Type().String()
 }
 
+// +dump
 type ImportSpec struct {
 	*ast.ImportSpec
 }
@@ -454,6 +435,7 @@ func (s *Signature) String() string {
 	return buf.String()
 }
 
+// +dump
 type FuncType struct {
 	*ast.FuncType
 }
@@ -482,12 +464,9 @@ func (f *FuncType) String() string {
 	return "func " + f.Signature().String()
 }
 
-func (f *FuncType) Dump() string {
-	return astDump(f.FuncType)
-}
-
 type ValueSpecMap map[string]*ValueSpec // +map
 
+// +dump
 type ValueSpec struct {
 	*ast.ValueSpec
 }
@@ -541,10 +520,7 @@ func (v *ValueSpec) String() string {
 	return buf.String()
 }
 
-func (v *ValueSpec) Dump() string {
-	return astDump(v.ValueSpec)
-}
-
+// +dump
 type Labeled struct {
 	*ast.LabeledStmt
 }
@@ -554,27 +530,29 @@ type Tags map[string]string // +map
 func extractTags(groups ...*ast.CommentGroup) Tags {
 	tags := make(Tags)
 
-	for _, group := range groups {
-		if group == nil {
-			continue
-		}
-
-		for _, comment := range group.List {
-			if comment := strings.TrimSpace(strings.TrimLeft(comment.Text, "/")); strings.HasPrefix(comment, "+") {
-				parts := whitespace.Split(comment, 2)
-
-				if len(parts) > 1 {
-					key := strings.TrimLeft(parts[0], "+")
-					value := parts[1]
-
-					tags[key] = value
-				} else {
-					key := strings.TrimLeft(comment, "+")
-
-					tags[key] = ""
-				}
+	if groups != nil {
+		for _, group := range groups {
+			if group == nil {
+				continue
 			}
 
+			for _, comment := range group.List {
+				if comment := strings.TrimSpace(strings.TrimLeft(comment.Text, "/")); strings.HasPrefix(comment, "+") {
+					parts := whitespace.Split(comment, 2)
+
+					if len(parts) > 1 {
+						key := strings.TrimLeft(parts[0], "+")
+						value := parts[1]
+
+						tags[key] = value
+					} else {
+						key := strings.TrimLeft(comment, "+")
+
+						tags[key] = ""
+					}
+				}
+
+			}
 		}
 	}
 

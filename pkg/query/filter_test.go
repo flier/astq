@@ -6,7 +6,7 @@ import (
 	"go/token"
 )
 
-func ExampleFieldMap_WithPrefix() {
+func ExampleNamedFieldMap_WithPrefix() {
 	f, _ := parser.ParseFile(token.NewFileSet(), "test.go", `
 
 package test
@@ -22,7 +22,7 @@ type S struct {
 	// Output: [Foo]
 }
 
-func ExampleFieldMap_WithSuffix() {
+func ExampleNamedFieldMap_WithSuffix() {
 	f, _ := parser.ParseFile(token.NewFileSet(), "test.go", `
 
 package test
@@ -38,7 +38,7 @@ type S struct {
 	// Output: [Foo]
 }
 
-func ExampleFieldMap_WithTag() {
+func ExampleNamedFieldMap_WithTag() {
 	f, _ := parser.ParseFile(token.NewFileSet(), "test.go", `
 
 package test

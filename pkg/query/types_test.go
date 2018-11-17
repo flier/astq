@@ -7,7 +7,7 @@ import (
 	"strings"
 )
 
-func ExampleTypeMap_WithTag() {
+func ExampleTypeDeclMap_WithTag() {
 	f, _ := parser.ParseFile(token.NewFileSet(), "test.go", `
 
 package test

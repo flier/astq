@@ -7,12 +7,14 @@ import (
 	"go/token"
 )
 
+//go:generate astgen -t ../../template/dump.gogo -p $GOFILE -o file_dump.go
 //go:generate astgen -t ../../template/iter.gogo -p $GOFILE -o file_iter.go
 //go:generate astgen -t ../../template/map.gogo -p $GOFILE -o file_map.go
 //go:generate astgen -t ../../template/tag.gogo -p $GOFILE -o file_tag.go
 
 type FileMap map[string]*File // +map
 
+// +dump
 type File struct {
 	*ast.File
 }
@@ -21,16 +23,13 @@ func FromFile(f *ast.File) *File {
 	return &File{f}
 }
 
-func (f *File) Dump() string {
-	return astDump(f.File)
-}
-
 func (f *File) Tags() Tags {
 	return extractTags(f.File.Doc)
 }
 
 type GenDeclIter <-chan *GenDecl // +iter
 
+// +dump
 type GenDecl struct {
 	*ast.GenDecl
 }

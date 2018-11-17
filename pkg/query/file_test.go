@@ -7,7 +7,7 @@ import (
 	"strings"
 )
 
-func ExampleFile_Type() {
+func ExampleFile_TypeDecl() {
 	f, _ := parser.ParseFile(token.NewFileSet(), "test.go", `
 
 package test
@@ -21,7 +21,7 @@ type Bar interface {}
 	// Output: Bar
 }
 
-func ExampleFile_Types() {
+func ExampleFile_TypeDecls() {
 	f, _ := parser.ParseFile(token.NewFileSet(), "test.go", `
 
 package test
