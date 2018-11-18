@@ -28,15 +28,69 @@ func ExampleField_Tag() {
 package test
 
 type S struct {
+	// +tag line:"dot"
 	F string `+"`species:\"gopher\" color:\"blue\"`"+`
 }
 
 `, parser.AllErrors)
 
-	tag := FromFile(f).Struct("S").NamedField("F").Tag()
+	tags := FromFile(f).Struct("S").NamedField("F").Tags()
 
-	fmt.Println(tag, tag.Get("species"), tag.Get("color"))
-	// Output: species:"gopher" color:"blue" gopher blue
+	fmt.Println(tags, tags.Get("species"), tags.Get("color"))
+	// Output: [species:"gopher" color:"blue"] gopher blue
+}
+
+func ExampleNamedFieldMap_WithPrefix() {
+	f, _ := parser.ParseFile(token.NewFileSet(), "test.go", `
+
+package test
+
+type S struct {
+	Foo string
+	Bar string
+}
+
+`, parser.AllErrors)
+
+	fmt.Println(FromFile(f).Struct("S").NamedFields().WithPrefix("F").Keys())
+	// Output: [Foo]
+}
+
+func ExampleNamedFieldMap_WithSuffix() {
+	f, _ := parser.ParseFile(token.NewFileSet(), "test.go", `
+
+package test
+
+type S struct {
+	Foo string
+	Bar string
+}
+
+`, parser.AllErrors)
+
+	fmt.Println(FromFile(f).Struct("S").NamedFields().WithSuffix("o").Keys())
+	// Output: [Foo]
+}
+
+func ExampleNamedFieldMap_WithTag() {
+	f, _ := parser.ParseFile(token.NewFileSet(), "test.go", `
+
+package test
+
+type S struct {
+	Foo string `+"`species:\"gopher\" color:\"red\"`"+`
+	Bar string `+"`species:\"gopher\" color:\"\"`"+`
+	Qux string `+"`species:\"gopher\"`"+`
+}
+
+`, parser.AllErrors)
+
+	fmt.Println(
+		FromFile(f).Struct("S").NamedFields().WithTagValue("color", "red").Keys(),
+		Sorted(FromFile(f).Struct("S").NamedFields().WithTag("color").Keys()),
+		FromFile(f).Struct("S").NamedFields().WithoutTag("color").Keys(),
+	)
+	// Output: [Foo] [Bar Foo] [Qux]
 }
 
 func ExampleInterfaceType_Methods() {

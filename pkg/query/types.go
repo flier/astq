@@ -13,6 +13,7 @@ import (
 //go:generate astgen -t ../../template/dump.gogo -p $GOFILE -o types_dump.go
 //go:generate astgen -t ../../template/iter.gogo -p $GOFILE -o types_iter.go
 //go:generate astgen -t ../../template/map.gogo -p $GOFILE -o types_map.go
+//go:generate astgen -t ../../template/tag.gogo -p $GOFILE -o types_tag.go
 
 type Named interface {
 	Name() string
@@ -305,7 +306,7 @@ func asFieldList(fields *ast.FieldList) (items FieldList) {
 	return
 }
 
-type NamedFieldMap map[string]*NamedField // +tag map:""
+type NamedFieldMap map[string]*NamedField // +tag map:"" tag:""
 
 func asNamedFieldMap(fields *ast.FieldList) NamedFieldMap {
 	items := make(NamedFieldMap)
@@ -339,12 +340,14 @@ func (f *Field) Type() Expr {
 	return asExpr(f.Field.Type)
 }
 
-func (f *Field) Tag() reflect.StructTag {
-	if f.Field.Tag == nil {
-		return ""
+func (f *Field) Tags() Tags {
+	tags := extractTags(f.Field.Doc, f.Field.Comment)
+
+	if f.Field.Tag != nil {
+		tags = append(tags, reflect.StructTag(strings.Trim(f.Field.Tag.Value, "`")))
 	}
 
-	return reflect.StructTag(strings.Trim(f.Field.Tag.Value, "`"))
+	return tags
 }
 
 func (f *Field) String() string {
