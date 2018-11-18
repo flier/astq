@@ -5,6 +5,7 @@ package {{ .Package.Name }}
 {{ with .File }}
 {{   range ( .TypeDecls.WithTag "tag" ) }}
 {{     if .Type.IsMap }}
+// WithTagValue returns items contains tag which match the key and value
 func (m {{ .Name }}) WithTagValue(key, value string) {{ .Name }} {
 	return m.Filter(func(_name {{ .Type.Key }}, item {{ .Type.Value }}) bool {
 		tags := item.Tags()
@@ -14,23 +15,45 @@ func (m {{ .Name }}) WithTagValue(key, value string) {{ .Name }} {
 	})
 }
 
+// WithTag returns items with the tag
 func (m {{ .Name }}) WithTag(key string) {{ .Name }} {
 	return m.Filter(func(_name {{ .Type.Key }}, item {{ .Type.Value }}) bool {
-		tags := item.Tags()
-		_, found := tags[key]
-
-		return found
+		return item.Tags().Contains(key)
 	})
 }
 
+// WithTag returns items without the tag
 func (m {{ .Name }}) WithoutTag(key string) {{ .Name }} {
 	return m.Filter(func(_name {{ .Type.Key }}, item {{ .Type.Value }}) bool {
-		tags := item.Tags()
-		_, found := tags[key]
-
-		return !found
+		return !item.Tags().Contains(key)
 	})
 }
 {{     end}}
+
+{{     if .Type.IsChan }}
+// WithTagValue returns items contains tag which match the key and value
+func (m {{ .Name }}) WithTagValue(key, value string) {{ .Name }} {
+	return m.Filter(func(item {{ .Type.Elem }}) bool {
+		tags := item.Tags()
+		v, found := tags[key]
+
+		return found && v == value
+	})
+}
+
+// WithTag returns items with the tag
+func (m {{ .Name }}) WithTag(key string) {{ .Name }} {
+	return m.Filter(func(item {{ .Type.Elem }}) bool {
+		return item.Tags().Contains(key)
+	})
+}
+
+// WithTag returns items without the tag
+func (m {{ .Name }}) WithoutTag(key string) {{ .Name }} {
+	return m.Filter(func(item {{ .Type.Elem }}) bool {
+		return !item.Tags().Contains(key)
+	})
+}
+{{	   end }}
 {{   end }}
 {{ end }}

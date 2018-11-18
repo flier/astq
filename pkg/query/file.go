@@ -27,7 +27,9 @@ func (f *File) Tags() Tags {
 	return extractTags(f.File.Doc)
 }
 
-type GenDeclIter <-chan *GenDecl // +iter
+// +iter
+// +tag
+type GenDeclIter <-chan *GenDecl
 
 // +dump
 type GenDecl struct {
@@ -59,7 +61,10 @@ func (f *File) GenDeclIter() GenDeclIter {
 	return c
 }
 
-type TypeDeclIter <-chan *TypeDecl // +iter
+// +iter
+// +tag
+type TypeDeclIter <-chan *TypeDecl
+
 // +map
 // +tag
 type TypeDeclMap map[string]*TypeDecl
@@ -111,7 +116,10 @@ func (f *File) TypeDecls() TypeDeclMap {
 	return items
 }
 
-type InterfaceIter <-chan *InterfaceDef // +iter
+// +iter
+// +tag
+type InterfaceIter <-chan *InterfaceDef
+
 // +map
 // +tag
 type InterfaceMap map[string]*InterfaceDef
@@ -158,7 +166,10 @@ func (f *File) Interfaces() InterfaceMap {
 	return items
 }
 
-type StructIter <-chan *StructDef // +iter
+// +iter
+// +tag
+type StructIter <-chan *StructDef
+
 // +map
 // +tag
 type StructMap map[string]*StructDef
@@ -258,7 +269,10 @@ func (f *File) Structs() StructMap {
 	return items
 }
 
-type FuncDeclIter <-chan *FuncDecl // +iter
+// +iter
+// +tag
+type FuncDeclIter <-chan *FuncDecl
+
 // +map
 // +tag
 type FuncDeclMap map[string]*FuncDecl
@@ -350,7 +364,10 @@ func (f *File) Funcs() FuncDeclMap {
 	return items
 }
 
-type ImportDeclIter <-chan *ImportDecl // +iter
+// +iter
+// +tag
+type ImportDeclIter <-chan *ImportDecl
+
 // +map
 // +tag
 type ImportDeclMap map[string]*ImportDecl
@@ -397,7 +414,10 @@ func (f *File) Imports() ImportDeclMap {
 	return items
 }
 
-type ConstDeclIter <-chan *ConstDecl // +iter
+// +iter
+// +tag
+type ConstDeclIter <-chan *ConstDecl
+
 // +map
 // +tag
 type ConstDeclMap map[string]*ConstDecl
@@ -456,7 +476,10 @@ func (f *File) Consts() ConstDeclMap {
 	return items
 }
 
-type VarDeclIter <-chan *VarDecl // +iter
+// +iter
+// +tag
+type VarDeclIter <-chan *VarDecl
+
 // +map
 // +tag
 type VarDeclMap map[string]*VarDecl
