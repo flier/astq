@@ -12,9 +12,9 @@ import (
 //go:generate astgen -t ../../template/map.gogo -p $GOFILE -o file_map.go
 //go:generate astgen -t ../../template/tag.gogo -p $GOFILE -o file_tag.go
 
-type FileMap map[string]*File // +map
+type FileMap map[string]*File // +tag map:""
 
-// +dump
+// +tag dump:""
 type File struct {
 	*ast.File
 }
@@ -27,11 +27,9 @@ func (f *File) Tags() Tags {
 	return extractTags(f.File.Doc)
 }
 
-// +iter
-// +tag
-type GenDeclIter <-chan *GenDecl
+type GenDeclIter <-chan *GenDecl // +tag iter:"" tag:""
 
-// +dump
+// +tag dump:""
 type GenDecl struct {
 	*ast.GenDecl
 }
@@ -61,15 +59,10 @@ func (f *File) GenDeclIter() GenDeclIter {
 	return c
 }
 
-// +iter
-// +tag
-type TypeDeclIter <-chan *TypeDecl
+type TypeDeclIter <-chan *TypeDecl    // +tag iter:"" tag:""
+type TypeDeclMap map[string]*TypeDecl // +tag map:"" tag:""
 
-// +map
-// +tag
-type TypeDeclMap map[string]*TypeDecl
-
-// +dump TypeSpec
+// +tag dump:"TypeSpec"
 type TypeDecl struct {
 	*File
 	*GenDecl
@@ -116,15 +109,10 @@ func (f *File) TypeDecls() TypeDeclMap {
 	return items
 }
 
-// +iter
-// +tag
-type InterfaceIter <-chan *InterfaceDef
+type InterfaceIter <-chan *InterfaceDef    // +tag iter:"" tag:""
+type InterfaceMap map[string]*InterfaceDef // +tag map:"" tag:""
 
-// +map
-// +tag
-type InterfaceMap map[string]*InterfaceDef
-
-// +dump InterfaceType
+// +tag dump:"InterfaceType"
 type InterfaceDef struct {
 	*TypeDecl
 	*InterfaceType
@@ -166,15 +154,10 @@ func (f *File) Interfaces() InterfaceMap {
 	return items
 }
 
-// +iter
-// +tag
-type StructIter <-chan *StructDef
+type StructIter <-chan *StructDef    // +tag iter:"" tag:""
+type StructMap map[string]*StructDef // +tag map:"" tag:""
 
-// +map
-// +tag
-type StructMap map[string]*StructDef
-
-// +dump StructType
+// +tag dump:"StructType"
 type StructDef struct {
 	*TypeDecl
 	*StructType
@@ -269,15 +252,10 @@ func (f *File) Structs() StructMap {
 	return items
 }
 
-// +iter
-// +tag
-type FuncDeclIter <-chan *FuncDecl
+type FuncDeclIter <-chan *FuncDecl    // +tag iter:"" tag:""
+type FuncDeclMap map[string]*FuncDecl // +tag map:"" tag:""
 
-// +map
-// +tag
-type FuncDeclMap map[string]*FuncDecl
-
-// +dump FuncDecl
+// +tag dump:"FuncDecl"
 type FuncDecl struct {
 	*File
 	*ast.FuncDecl
@@ -364,15 +342,10 @@ func (f *File) Funcs() FuncDeclMap {
 	return items
 }
 
-// +iter
-// +tag
-type ImportDeclIter <-chan *ImportDecl
+type ImportDeclIter <-chan *ImportDecl    // +tag iter:"" tag:""
+type ImportDeclMap map[string]*ImportDecl // +tag map:"" tag:""
 
-// +map
-// +tag
-type ImportDeclMap map[string]*ImportDecl
-
-// +dump ImportSpec
+// +tag dump:"ImportSpec"
 type ImportDecl struct {
 	*GenDecl
 	*ImportSpec
@@ -414,15 +387,10 @@ func (f *File) Imports() ImportDeclMap {
 	return items
 }
 
-// +iter
-// +tag
-type ConstDeclIter <-chan *ConstDecl
+type ConstDeclIter <-chan *ConstDecl    // +tag iter:"" tag:""
+type ConstDeclMap map[string]*ConstDecl // +tag map:"" tag:""
 
-// +map
-// +tag
-type ConstDeclMap map[string]*ConstDecl
-
-// +dump ValueSpec
+// +tag dump:"ValueSpec"
 type ConstDecl struct {
 	*GenDecl
 	*ValueSpec
@@ -476,15 +444,10 @@ func (f *File) Consts() ConstDeclMap {
 	return items
 }
 
-// +iter
-// +tag
-type VarDeclIter <-chan *VarDecl
+type VarDeclIter <-chan *VarDecl    // +tag iter:"" tag:""
+type VarDeclMap map[string]*VarDecl // +tag map:"" tag:""
 
-// +map
-// +tag
-type VarDeclMap map[string]*VarDecl
-
-// +dump ValueSpec
+// +tag dump:"ValueSpec"
 type VarDecl struct {
 	*GenDecl
 	*ValueSpec

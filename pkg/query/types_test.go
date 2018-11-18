@@ -12,7 +12,7 @@ func ExampleTypeDeclMap_WithTag() {
 
 package test
 
-// +map
+// +tag map:""
 type Foo map[string]interface{}
 type Bar interface {}
 

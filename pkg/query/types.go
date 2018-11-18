@@ -7,12 +7,7 @@ import (
 	"io"
 	"path/filepath"
 	"reflect"
-	"regexp"
 	"strings"
-)
-
-var (
-	whitespace = regexp.MustCompile("\\s")
 )
 
 //go:generate astgen -t ../../template/dump.gogo -p $GOFILE -o types_dump.go
@@ -23,7 +18,7 @@ type Named interface {
 	Name() string
 }
 
-// +dump
+// +tag dump:""
 type TypeSpec struct {
 	*ast.TypeSpec
 }
@@ -92,7 +87,7 @@ func (t *TypeSpec) AsStruct() *StructType {
 	return nil
 }
 
-// +dump
+// +tag dump:""
 type ArrayType struct {
 	*ast.ArrayType
 }
@@ -109,7 +104,7 @@ func (a *ArrayType) String() string {
 	return fmt.Sprintf("[]%s", a.Elem())
 }
 
-// +dump
+// +tag dump:""
 type MapType struct {
 	*ast.MapType
 }
@@ -126,7 +121,7 @@ func (m *MapType) String() string {
 	return fmt.Sprintf("map[%s]%s", m.Key(), m.Value())
 }
 
-// +dump
+// +tag dump:""
 type ChanType struct {
 	*ast.ChanType
 }
@@ -167,7 +162,7 @@ func (c *ChanType) String() string {
 	}
 }
 
-// +dump
+// +tag dump:""
 type InterfaceType struct {
 	*ast.InterfaceType
 }
@@ -224,10 +219,10 @@ func (intf *InterfaceType) Methods() MethodMap {
 	return methods
 }
 
-type MethodIter <-chan *Method    // +iter
-type MethodMap map[string]*Method // +map
+type MethodIter <-chan *Method    // +tag iter:""
+type MethodMap map[string]*Method // +tag map:""
 
-// +dump
+// +tag dump:""
 type Method struct {
 	*FuncType
 	*ast.Ident
@@ -241,7 +236,7 @@ func (m *Method) String() string {
 	return m.Name() + m.Signature().String()
 }
 
-// +dump
+// +tag dump:""
 type StructType struct {
 	*ast.StructType
 }
@@ -310,7 +305,7 @@ func asFieldList(fields *ast.FieldList) (items FieldList) {
 	return
 }
 
-type NamedFieldMap map[string]*NamedField // +map
+type NamedFieldMap map[string]*NamedField // +tag map:""
 
 func asNamedFieldMap(fields *ast.FieldList) NamedFieldMap {
 	items := make(NamedFieldMap)
@@ -331,7 +326,7 @@ func asNamedFieldMap(fields *ast.FieldList) NamedFieldMap {
 	return items
 }
 
-// +dump
+// +tag dump:""
 type Field struct {
 	*ast.Field
 }
@@ -368,7 +363,7 @@ func (f *Field) String() string {
 	return fmt.Sprintf("%s %s", strings.Join(names, ", "), ty)
 }
 
-// +dump
+// +tag dump:""
 type NamedField struct {
 	*Field
 	*ast.Ident
@@ -390,7 +385,7 @@ func (f *NamedField) String() string {
 	return f.Type().String()
 }
 
-// +dump
+// +tag dump:""
 type ImportSpec struct {
 	*ast.ImportSpec
 }
@@ -415,7 +410,7 @@ func (i *ImportSpec) String() string {
 	return fmt.Sprintf("import %v", i.ImportSpec.Path.Value)
 }
 
-// +dump
+// +tag dump:""
 type Signature struct {
 	*FuncType
 }
@@ -438,7 +433,7 @@ func (s *Signature) String() string {
 	return buf.String()
 }
 
-// +dump
+// +tag dump:""
 type FuncType struct {
 	*ast.FuncType
 }
@@ -467,9 +462,9 @@ func (f *FuncType) String() string {
 	return "func " + f.Signature().String()
 }
 
-type ValueSpecMap map[string]*ValueSpec // +map
+type ValueSpecMap map[string]*ValueSpec // +tag map:""
 
-// +dump
+// +tag dump:""
 type ValueSpec struct {
 	*ast.ValueSpec
 }
@@ -523,41 +518,7 @@ func (v *ValueSpec) String() string {
 	return buf.String()
 }
 
-// +dump
+// +tag dump:""
 type Labeled struct {
 	*ast.LabeledStmt
-}
-
-type Tags map[string]string // +map
-
-func extractTags(groups ...*ast.CommentGroup) Tags {
-	tags := make(Tags)
-
-	if groups != nil {
-		for _, group := range groups {
-			if group == nil {
-				continue
-			}
-
-			for _, comment := range group.List {
-				if comment := strings.TrimSpace(strings.TrimLeft(comment.Text, "/")); strings.HasPrefix(comment, "+") {
-					parts := whitespace.Split(comment, 2)
-
-					if len(parts) > 1 {
-						key := strings.TrimLeft(parts[0], "+")
-						value := parts[1]
-
-						tags[key] = value
-					} else {
-						key := strings.TrimLeft(comment, "+")
-
-						tags[key] = ""
-					}
-				}
-
-			}
-		}
-	}
-
-	return tags
 }

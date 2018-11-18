@@ -75,7 +75,7 @@ func asExpr(e ast.Expr) Expr {
 	}
 }
 
-// +dump
+// +tag dump:""
 type AstExpr struct {
 	ast.Expr
 }

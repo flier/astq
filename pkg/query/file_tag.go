@@ -5,8 +5,7 @@ package query
 // WithTagValue returns items contains tag which match the key and value
 func (m ConstDeclIter) WithTagValue(key, value string) ConstDeclIter {
 	return m.Filter(func(item *ConstDecl) bool {
-		tags := item.Tags()
-		v, found := tags[key]
+		v, found := item.Tags().Lookup(key)
 
 		return found && v == value
 	})
@@ -29,8 +28,7 @@ func (m ConstDeclIter) WithoutTag(key string) ConstDeclIter {
 // WithTagValue returns items contains tag which match the key and value
 func (m ConstDeclMap) WithTagValue(key, value string) ConstDeclMap {
 	return m.Filter(func(_name string, item *ConstDecl) bool {
-		tags := item.Tags()
-		v, found := tags[key]
+		v, found := item.Tags().Lookup(key)
 
 		return found && v == value
 	})
@@ -53,8 +51,7 @@ func (m ConstDeclMap) WithoutTag(key string) ConstDeclMap {
 // WithTagValue returns items contains tag which match the key and value
 func (m FuncDeclIter) WithTagValue(key, value string) FuncDeclIter {
 	return m.Filter(func(item *FuncDecl) bool {
-		tags := item.Tags()
-		v, found := tags[key]
+		v, found := item.Tags().Lookup(key)
 
 		return found && v == value
 	})
@@ -77,8 +74,7 @@ func (m FuncDeclIter) WithoutTag(key string) FuncDeclIter {
 // WithTagValue returns items contains tag which match the key and value
 func (m FuncDeclMap) WithTagValue(key, value string) FuncDeclMap {
 	return m.Filter(func(_name string, item *FuncDecl) bool {
-		tags := item.Tags()
-		v, found := tags[key]
+		v, found := item.Tags().Lookup(key)
 
 		return found && v == value
 	})
@@ -101,8 +97,7 @@ func (m FuncDeclMap) WithoutTag(key string) FuncDeclMap {
 // WithTagValue returns items contains tag which match the key and value
 func (m GenDeclIter) WithTagValue(key, value string) GenDeclIter {
 	return m.Filter(func(item *GenDecl) bool {
-		tags := item.Tags()
-		v, found := tags[key]
+		v, found := item.Tags().Lookup(key)
 
 		return found && v == value
 	})
@@ -125,8 +120,7 @@ func (m GenDeclIter) WithoutTag(key string) GenDeclIter {
 // WithTagValue returns items contains tag which match the key and value
 func (m ImportDeclIter) WithTagValue(key, value string) ImportDeclIter {
 	return m.Filter(func(item *ImportDecl) bool {
-		tags := item.Tags()
-		v, found := tags[key]
+		v, found := item.Tags().Lookup(key)
 
 		return found && v == value
 	})
@@ -149,8 +143,7 @@ func (m ImportDeclIter) WithoutTag(key string) ImportDeclIter {
 // WithTagValue returns items contains tag which match the key and value
 func (m ImportDeclMap) WithTagValue(key, value string) ImportDeclMap {
 	return m.Filter(func(_name string, item *ImportDecl) bool {
-		tags := item.Tags()
-		v, found := tags[key]
+		v, found := item.Tags().Lookup(key)
 
 		return found && v == value
 	})
@@ -173,8 +166,7 @@ func (m ImportDeclMap) WithoutTag(key string) ImportDeclMap {
 // WithTagValue returns items contains tag which match the key and value
 func (m InterfaceIter) WithTagValue(key, value string) InterfaceIter {
 	return m.Filter(func(item *InterfaceDef) bool {
-		tags := item.Tags()
-		v, found := tags[key]
+		v, found := item.Tags().Lookup(key)
 
 		return found && v == value
 	})
@@ -197,8 +189,7 @@ func (m InterfaceIter) WithoutTag(key string) InterfaceIter {
 // WithTagValue returns items contains tag which match the key and value
 func (m InterfaceMap) WithTagValue(key, value string) InterfaceMap {
 	return m.Filter(func(_name string, item *InterfaceDef) bool {
-		tags := item.Tags()
-		v, found := tags[key]
+		v, found := item.Tags().Lookup(key)
 
 		return found && v == value
 	})
@@ -221,8 +212,7 @@ func (m InterfaceMap) WithoutTag(key string) InterfaceMap {
 // WithTagValue returns items contains tag which match the key and value
 func (m StructIter) WithTagValue(key, value string) StructIter {
 	return m.Filter(func(item *StructDef) bool {
-		tags := item.Tags()
-		v, found := tags[key]
+		v, found := item.Tags().Lookup(key)
 
 		return found && v == value
 	})
@@ -245,8 +235,7 @@ func (m StructIter) WithoutTag(key string) StructIter {
 // WithTagValue returns items contains tag which match the key and value
 func (m StructMap) WithTagValue(key, value string) StructMap {
 	return m.Filter(func(_name string, item *StructDef) bool {
-		tags := item.Tags()
-		v, found := tags[key]
+		v, found := item.Tags().Lookup(key)
 
 		return found && v == value
 	})
@@ -269,8 +258,7 @@ func (m StructMap) WithoutTag(key string) StructMap {
 // WithTagValue returns items contains tag which match the key and value
 func (m TypeDeclIter) WithTagValue(key, value string) TypeDeclIter {
 	return m.Filter(func(item *TypeDecl) bool {
-		tags := item.Tags()
-		v, found := tags[key]
+		v, found := item.Tags().Lookup(key)
 
 		return found && v == value
 	})
@@ -293,8 +281,7 @@ func (m TypeDeclIter) WithoutTag(key string) TypeDeclIter {
 // WithTagValue returns items contains tag which match the key and value
 func (m TypeDeclMap) WithTagValue(key, value string) TypeDeclMap {
 	return m.Filter(func(_name string, item *TypeDecl) bool {
-		tags := item.Tags()
-		v, found := tags[key]
+		v, found := item.Tags().Lookup(key)
 
 		return found && v == value
 	})
@@ -317,8 +304,7 @@ func (m TypeDeclMap) WithoutTag(key string) TypeDeclMap {
 // WithTagValue returns items contains tag which match the key and value
 func (m VarDeclIter) WithTagValue(key, value string) VarDeclIter {
 	return m.Filter(func(item *VarDecl) bool {
-		tags := item.Tags()
-		v, found := tags[key]
+		v, found := item.Tags().Lookup(key)
 
 		return found && v == value
 	})
@@ -341,8 +327,7 @@ func (m VarDeclIter) WithoutTag(key string) VarDeclIter {
 // WithTagValue returns items contains tag which match the key and value
 func (m VarDeclMap) WithTagValue(key, value string) VarDeclMap {
 	return m.Filter(func(_name string, item *VarDecl) bool {
-		tags := item.Tags()
-		v, found := tags[key]
+		v, found := item.Tags().Lookup(key)
 
 		return found && v == value
 	})

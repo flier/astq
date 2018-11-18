@@ -6,10 +6,10 @@ import "go/ast"
 //go:generate astgen -t ../../template/map.gogo -p $GOFILE -o pkg_map.go
 
 // Packages represents a map of Go package.
-type Packages map[string]*Package // +map
+type Packages map[string]*Package // +tag map:""
 
 // Package node represents a set of source files collectively building a Go package.
-// +dump
+// +tag dump:""
 type Package struct {
 	*ast.Package
 }
