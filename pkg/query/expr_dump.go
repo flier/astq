@@ -6,3 +6,8 @@ package query
 func (ast *AstExpr) Dump() string {
 	return astDump(ast)
 }
+
+// Dump returns the AST node and skip the nil
+func (ast *Object) Dump() string {
+	return astDump(ast)
+}

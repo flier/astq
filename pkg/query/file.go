@@ -43,6 +43,73 @@ func (d *GenDecl) IsConst() bool  { return d.GenDecl.Tok == token.CONST }
 func (d *GenDecl) IsType() bool   { return d.GenDecl.Tok == token.TYPE }
 func (d *GenDecl) IsVar() bool    { return d.GenDecl.Tok == token.VAR }
 
+func (d *GenDecl) Imports() (decls []*ImportDecl) {
+	if d.GenDecl.Tok == token.IMPORT {
+		for _, spec := range d.GenDecl.Specs {
+			if spec, ok := spec.(*ast.ImportSpec); ok {
+				decls = append(decls, &ImportDecl{d, &ImportSpec{spec}})
+			}
+		}
+	}
+
+	return
+}
+
+func (d *GenDecl) Consts() (decls []*ConstDecl) {
+	if d.GenDecl.Tok == token.CONST {
+		for _, spec := range d.GenDecl.Specs {
+			if spec, ok := spec.(*ast.ValueSpec); ok {
+				decls = append(decls, &ConstDecl{d, &ValueSpec{spec}})
+			}
+		}
+	}
+
+	return
+}
+
+func (d *GenDecl) Types() (decls []*TypeDecl) {
+	if d.GenDecl.Tok == token.TYPE {
+		for _, spec := range d.GenDecl.Specs {
+			if spec, ok := spec.(*ast.TypeSpec); ok {
+				decls = append(decls, &TypeDecl{nil, d, &TypeSpec{spec}})
+			}
+		}
+	}
+
+	return
+}
+
+func (d *GenDecl) Vars() (decls []*VarDecl) {
+	if d.GenDecl.Tok == token.VAR {
+		for _, spec := range d.GenDecl.Specs {
+			if spec, ok := spec.(*ast.ValueSpec); ok {
+				decls = append(decls, &VarDecl{d, &ValueSpec{spec}})
+			}
+		}
+	}
+
+	return
+}
+
+func (d *GenDecl) String() string {
+	buf := new(bytes.Buffer)
+
+	buf.WriteString(d.Tok.String() + "{\n")
+	for _, spec := range d.GenDecl.Specs {
+		switch spec := spec.(type) {
+		case *ast.ImportSpec:
+			buf.WriteString((&ImportSpec{spec}).String())
+		case *ast.TypeSpec:
+			buf.WriteString((&TypeSpec{spec}).String())
+		case *ast.ValueSpec:
+			buf.WriteString((&ValueSpec{spec}).String())
+		}
+	}
+	buf.WriteString("}")
+
+	return buf.String()
+}
+
 func (f *File) GenDeclIter() GenDeclIter {
 	c := make(chan *GenDecl)
 
@@ -69,8 +136,12 @@ type TypeDecl struct {
 	*TypeSpec
 }
 
+func (t *TypeDecl) String() string {
+	return "type " + t.TypeSpec.String()
+}
+
 func (t *TypeDecl) Tags() Tags {
-	return extractTags(t.File.Doc, t.GenDecl.Doc, t.TypeSpec.TypeSpec.Doc, t.TypeSpec.TypeSpec.Comment)
+	return extractTags(t.GenDecl.Doc, t.TypeSpec.TypeSpec.Doc, t.TypeSpec.TypeSpec.Comment)
 }
 
 func (f *File) TypeIter() TypeDeclIter {
@@ -351,6 +422,10 @@ type ImportDecl struct {
 	*ImportSpec
 }
 
+func (i *ImportDecl) String() string {
+	return "import " + i.ImportSpec.String()
+}
+
 func (f *File) ImportIter() ImportDeclIter {
 	c := make(chan *ImportDecl)
 
@@ -394,6 +469,26 @@ type ConstDeclMap map[string]*ConstDecl // +tag map:"" tag:""
 type ConstDecl struct {
 	*GenDecl
 	*ValueSpec
+}
+
+func (c *ConstDecl) Type() Expr {
+	ty := c.ValueSpec.Type()
+
+	if ty == nil {
+		for _, decl := range c.GenDecl.Specs {
+			if spec, ok := decl.(*ast.ValueSpec); ok {
+				if spec.Type != nil {
+					ty = asExpr(spec.Type)
+				}
+
+				if c.ValueSpec.ValueSpec == spec {
+					break
+				}
+			}
+		}
+	}
+
+	return ty
 }
 
 func (c *ConstDecl) String() string {

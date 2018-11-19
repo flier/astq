@@ -33,7 +33,7 @@ func (t *TypeSpec) Type() Expr {
 }
 
 func (t *TypeSpec) String() string {
-	return fmt.Sprintf("type %s %s", t.Name(), t.Type())
+	return fmt.Sprintf("%s %s", t.Name(), t.Type())
 }
 
 func (t *TypeSpec) Doc() (doc []string) {
@@ -407,10 +407,10 @@ func (i *ImportSpec) Path() string {
 
 func (i *ImportSpec) String() string {
 	if i.ImportSpec.Name != nil {
-		return fmt.Sprintf("import %s %v", i.ImportSpec.Name.Name, i.ImportSpec.Path.Value)
+		return fmt.Sprintf("%s %v", i.ImportSpec.Name.Name, i.ImportSpec.Path.Value)
 	}
 
-	return fmt.Sprintf("import %v", i.ImportSpec.Path.Value)
+	return fmt.Sprintf("%v", i.ImportSpec.Path.Value)
 }
 
 // +tag dump:""
@@ -524,4 +524,12 @@ func (v *ValueSpec) String() string {
 // +tag dump:""
 type Labeled struct {
 	*ast.LabeledStmt
+}
+
+func (l *Labeled) Stmt() Stmt {
+	return asStmt(l.LabeledStmt.Stmt)
+}
+
+func (l *Labeled) String() string {
+	return l.LabeledStmt.Label.Name + ":\n" + l.Stmt().String()
 }

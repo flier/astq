@@ -14,6 +14,8 @@ import (
 
 type Expr interface {
 	fmt.Stringer
+
+	Kind() reflect.Kind
 }
 
 func FromExpr(expr ast.Expr) Expr {
@@ -173,6 +175,15 @@ func (e *AstExpr) IsString() bool        { return e.Kind() == reflect.String }
 func (e *AstExpr) IsStruct() bool        { return e.Kind() == reflect.Struct }
 func (e *AstExpr) IsUnsafePointer() bool { return e.Kind() == reflect.UnsafePointer }
 
+func (e *AstExpr) IsInteger() bool {
+	return e.IsInt() || e.IsInt8() || e.IsInt16() || e.IsInt32() || e.IsInt64()
+}
+func (e *AstExpr) IsUnsignedInteger() bool {
+	return e.IsUint() || e.IsUint8() || e.IsUint16() || e.IsUint32() || e.IsUint64()
+}
+func (e *AstExpr) IsFloat() bool   { return e.IsFloat32() || e.IsFloat64() }
+func (e *AstExpr) IsComplex() bool { return e.IsComplex64() || e.IsComplex128() }
+
 func (e *AstExpr) IsBadExpr() bool {
 	_, ok := e.Expr.(*ast.BadExpr)
 
@@ -309,12 +320,9 @@ func (i *Ident) Spec() Spec {
 	return nil
 }
 
+// +tag dump:""
 type Object struct {
 	*ast.Object
-}
-
-func (o *Object) Dump() string {
-	return astDump(o.Object)
 }
 
 func (obj *Object) IsPackage() bool  { return obj.Kind == ast.Pkg }
@@ -324,7 +332,9 @@ func (obj *Object) IsVar() bool      { return obj.Kind == ast.Var }
 func (obj *Object) IsFunc() bool     { return obj.Kind == ast.Fun }
 func (obj *Object) IsLabel() bool    { return obj.Kind == ast.Lbl }
 
-type Spec interface{}
+type Spec interface {
+	fmt.Stringer
+}
 
 func (obj *Object) Spec() Spec {
 	switch obj.Kind {
@@ -333,11 +343,17 @@ func (obj *Object) Spec() Spec {
 			return &ImportSpec{spec}
 		}
 	case ast.Con: // constant
+		if spec, ok := obj.Decl.(*ast.ValueSpec); ok {
+			return &ValueSpec{spec}
+		}
 	case ast.Typ: // type
 		if spec, ok := obj.Decl.(*ast.TypeSpec); ok {
 			return &TypeSpec{spec}
 		}
 	case ast.Var: // variable
+		if spec, ok := obj.Decl.(*ast.ValueSpec); ok {
+			return &ValueSpec{spec}
+		}
 	case ast.Fun: // function or method
 		if decl, ok := obj.Decl.(*ast.FuncDecl); ok {
 			return &FuncDecl{nil, decl, &FuncType{decl.Type}}
@@ -371,6 +387,10 @@ func (e *Ellipsis) String() string {
 type BasicLit struct {
 	*AstExpr
 	*ast.BasicLit
+}
+
+func (lit *BasicLit) Kind() reflect.Kind {
+	return lit.AstExpr.Kind()
 }
 
 func (lit *BasicLit) IsInt() bool {
