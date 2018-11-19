@@ -7,21 +7,6 @@ import (
 	"strings"
 )
 
-func ExampleTypeDeclMap_WithTag() {
-	f, _ := parser.ParseFile(token.NewFileSet(), "test.go", `
-
-package test
-
-// +tag map:""
-type Foo map[string]interface{}
-type Bar interface {}
-
-`, parser.AllErrors|parser.ParseComments)
-
-	fmt.Println(FromFile(f).TypeDecls().WithTag("map").Keys())
-	// Output: [Foo]
-}
-
 func ExampleField_Tag() {
 	f, _ := parser.ParseFile(token.NewFileSet(), "test.go", `
 
