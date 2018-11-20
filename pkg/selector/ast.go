@@ -1,42 +1,88 @@
 package selector
 
-type Query interface {
+type Query []Path
+
+type Path []*Step
+
+type Step struct {
+	*Axis
+	Match  string
+	Filter Expr
 }
 
-type DocElem struct {
-	Query
+type Expr interface {
 }
 
-type AllElems struct {
-	Query
+type AxisDirection int
+
+const (
+	// DirectChild for direct child nodes
+	DirectChild AxisDirection = iota
+	// AnyDescendant for any descendant nodes
+	AnyDescendant
+	// CurrentDirectChild for current node plus direct child nodes
+	CurrentDirectChild
+	// CurrentAnyDescendant for current node plus any descendant nodes
+	CurrentAnyDescendant
+	// DirectLeftSibling for direct left sibling node, or
+	DirectLeftSibling
+	// AnyLeftSibling for any left sibling nodes
+	AnyLeftSibling
+	// DirectRightSibling for direct right sibling node
+	DirectRightSibling
+	// AnyRightSibling for any right sibling nodes
+	AnyRightSibling
+	// DirectLeftAndRightSibling  for direct left and right sibling nodes
+	DirectLeftAndRightSibling
+	// AnyLeftAndRightSibling for all left and right sibling nodes
+	AnyLeftAndRightSibling
+	// DirectParent for direct parent node
+	DirectParent
+	// AnyParent for any parent nodes
+	AnyParent
+	// AnyPreceding for any preceding nodes
+	AnyPreceding
+	// AnyFollowing for any following nodes
+	AnyFollowing
+)
+
+type Axis struct {
+	Direction AxisDirection
+	Type      string
 }
 
-type ChildElems struct {
-	Query
+type Condition struct {
+	Cond Expr
+	Then Expr
+	Else Expr
 }
 
-type WithAttr struct {
-	Query
-	Attr string
+type Unary struct {
+	Op string
+	Expr
 }
 
-type WithAttrValue struct {
-	Query
-	Attr  string
-	Value string
+type Binary struct {
+	Lhs Expr
+	Op  string
+	Rhs Expr
 }
 
-type WithIndex struct {
-	Query
-	Index int
+type FuncCall struct {
+	ID   string
+	Args []Expr
 }
 
-type WithPosition struct {
-	Query
-	BinOp string
-	Value int
+type Attr struct {
+	ID string
 }
 
-type WithName struct {
-	Name string
+type QueryParam struct {
+	ID string
 }
+
+type Str string
+
+type Num int
+
+type Keyword string
