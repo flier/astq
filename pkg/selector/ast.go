@@ -1,5 +1,7 @@
 package selector
 
+import "regexp"
+
 type Query []Path
 
 type Path []*Step
@@ -13,45 +15,12 @@ type Step struct {
 type Expr interface {
 }
 
-type AxisDirection int
-
-const (
-	// DirectChild for direct child nodes
-	DirectChild AxisDirection = iota
-	// AnyDescendant for any descendant nodes
-	AnyDescendant
-	// CurrentDirectChild for current node plus direct child nodes
-	CurrentDirectChild
-	// CurrentAnyDescendant for current node plus any descendant nodes
-	CurrentAnyDescendant
-	// DirectLeftSibling for direct left sibling node, or
-	DirectLeftSibling
-	// AnyLeftSibling for any left sibling nodes
-	AnyLeftSibling
-	// DirectRightSibling for direct right sibling node
-	DirectRightSibling
-	// AnyRightSibling for any right sibling nodes
-	AnyRightSibling
-	// DirectLeftAndRightSibling  for direct left and right sibling nodes
-	DirectLeftAndRightSibling
-	// AnyLeftAndRightSibling for all left and right sibling nodes
-	AnyLeftAndRightSibling
-	// DirectParent for direct parent node
-	DirectParent
-	// AnyParent for any parent nodes
-	AnyParent
-	// AnyPreceding for any preceding nodes
-	AnyPreceding
-	// AnyFollowing for any following nodes
-	AnyFollowing
-)
-
 type Axis struct {
-	Direction AxisDirection
-	Type      string
+	Dir  string
+	Type string
 }
 
-type Condition struct {
+type Cond struct {
 	Cond Expr
 	Then Expr
 	Else Expr
@@ -73,16 +42,21 @@ type FuncCall struct {
 	Args []Expr
 }
 
-type Attr struct {
+type Match struct {
+	Expr
+	*regexp.Regexp
+}
+
+type WithAttr struct {
 	ID string
 }
 
-type QueryParam struct {
-	ID string
-}
+type SubQuery Path
 
 type Str string
 
 type Num int
 
 type Keyword string
+
+type QueryParam string

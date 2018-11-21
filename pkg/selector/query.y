@@ -1,45 +1,52 @@
 %{
 package selector
 
+import (
+    "regexp"
+)
 %}
 
 %union {
     query Query
     path Path
+    axis *Axis
     step *Step
     expr Expr
     args []Expr
+    regexp *regexp.Regexp
+    err error
     str string
-    num int
-    boolean bool
-    dir AxisDirection
-    axis *Axis
+    num int64
 }
 
 %type <query>   query
 %type <path>    path
-%type <step>    step
-%type <expr>    filter expr condition logical bitwise relational arithmethical function_call attribute_ref query_parameter literal parenthesis
-%type <args>    function_args
-%type <str>     axis_type match logical_op bitwise_op relational_op arithmethical_op value
-%type <dir>     axis_direction
 %type <axis>    axis
+%type <step>    step
+%type <expr>    filter func_call attr_ref query_param literal parenthesis
+%type <expr>    expr expr1 expr2 expr3 expr4 expr5
+%type <args>    func_args
+%type <str>     axis_direction axis_type match logical_op bitwise_op relational_op arithmethical_op value
 
-%token '[', ']', '(', ')', ':', '@', '.', '"', '~', '=', ','
+%token '[' ']' '(' ')' ':' '@' '.' ','
 
-%token <str>    ID STR LAST POSITION '+', '-', '*', '/', '^', '%', '&', '|', '>', '<', '!', '~'
+%token <regexp> REGEXP
+%token <err>    ERR
+%token <str>    ID STR TRUE FALSE NULL
+%token <str>    '+' '-' '*' '/' '^' '%' '>' '<' '!' '~' '&' '|' '?'
+%token <str>    LSHIFT RSHIFT AND OR EQ NE LTE GTE MATCH NONMATCH ELSE_OR
 %token <num>    NUM
-%token <boolean> BOOL
 
-%right  '=' '!' '~' '?' ':'
-%left   '&' '|' '>' '<'
-%left   '+' '-'
-%left   '*' '/' '%' '^'
+%start top
 
 %%
 
 top:
     query
+    {
+        querylex.(*queryLexerImpl).result = $1
+    }
+    ;
 
 query:
     path
@@ -50,6 +57,7 @@ query:
     {
         $$ = append($1, $3)
     }
+    ;
 
 path:
     step
@@ -60,6 +68,7 @@ path:
     {
         $$ = append($1, $2)
     }
+    ;
 
 step:
     match
@@ -86,121 +95,134 @@ step:
     {
         $$ = &Step { Axis: $1, Match: $2, Filter: $4 }
     }
+    ;
 
 match:
     ID
 |   STR
 |   '*'
+    ;
 
 filter:
     '[' expr ']'
     {
         $$ = $2
     }
+    ;
 
 axis:
     axis_direction
     {
-        $$ = &Axis { Direction: $1 }
+        $$ = &Axis { Dir: $1 }
     }
-|   axis_direction ':' axis_type
+|   axis_direction axis_type
     {
-        $$ = &Axis { $1, $3 }
+        $$ = &Axis { $1, $2 }
     }
+    ;
 
 axis_direction:
-    '/'             { $$ = DirectChild }
-|   '/' '/'         { $$ = AnyDescendant }
-|   '.' '/'         { $$ = CurrentDirectChild }
-|   '.' '/' '/'     { $$ = CurrentAnyDescendant }
-|   '-' '/'         { $$ = DirectLeftSibling }
-|   '-' '/' '/'     { $$ = AnyLeftSibling }
-|   '+' '/'         { $$ = DirectRightSibling }
-|   '+' '/' '/'     { $$ = AnyRightSibling }
-|   '~' '/'         { $$ = DirectLeftAndRightSibling }
-|   '~' '/' '/'     { $$ = AnyLeftAndRightSibling }
-|   '.' '.' '/'     { $$ = DirectParent }
-|   '.' '.' '/' '/' { $$ = AnyParent }
-|   '<' '/' '/'     { $$ = AnyPreceding }
-|   '>' '/' '/'     { $$ = AnyFollowing }
+    '/'             { $$ = "/" }
+|   '/' '/'         { $$ = "//" }
+|   '.' '/'         { $$ = "./" }
+|   '.' '/' '/'     { $$ = ".//" }
+|   '-' '/'         { $$ = "-/" }
+|   '-' '/' '/'     { $$ = "-//" }
+|   '+' '/'         { $$ = "+/" }
+|   '+' '/' '/'     { $$ = "+//" }
+|   '~' '/'         { $$ = "~/" }
+|   '~' '/' '/'     { $$ = "~//" }
+|   '.' '.' '/'     { $$ = "../" }
+|   '.' '.' '/' '/' { $$ = "..//" }
+|   '<' '/' '/'     { $$ = "<//" }
+|   '>' '/' '/'     { $$ = ">//" }
+    ;
 
 axis_type:
-    ID
-|   STR
+    ':' ID  { $$ = $2 }
+|   ':' STR { $$ = $2 }
+    ;
 
 expr:
-    condition
-|   logical
-|   bitwise
-|   relational
-|   arithmethical
-|   function_call
-|   attribute_ref
-|   query_parameter
-|   literal
-|   parenthesis
-
-condition:
-    expr '?' expr ':' expr
+    expr1
+|   expr1 '?' expr1 ':' expr1
     {
-        $$ = &Condition { $1, $3, $5 }
+        $$ = &Cond { $1, $3, $5 }
     }
-|   expr '?' ':' expr
+|   expr1 ELSE_OR expr1
     {
-        $$ = &Condition { $1, nil, $4 }
+        $$ = &Cond { $1, nil, $3 }
     }
+    ;
 
-logical:
-    expr logical_op expr
+expr1:
+    expr2
+|   expr2 logical_op expr2
     {
         $$ = &Binary { $1, $2, $3 }
     }
-|   '!' expr
+|   '!' expr2
     {
         $$ = &Unary { $1, $2 }
     }
+    ;
 
 logical_op:
-    '&' '&' { $$ = "&&" }
-|   '|' '|' { $$ = "||" }
+    AND
+|   OR
+    ;
 
-bitwise:
-    expr bitwise_op expr
+expr2:
+    expr3
+|   expr3 bitwise_op expr3
     {
         $$ = &Binary { $1, $2, $3 }
     }
-|   '~' expr
+|   '~' expr3
     {
         $$ = &Unary { $1, $2 }
     }
+    ;
 
 bitwise_op:
     '&'
 |   '|'
-|   '<' '<' { $$ = "<<" }
-|   '>' '>' { $$ = ">>" }
+|   LSHIFT
+|   RSHIFT
+    ;
 
-relational:
-    expr relational_op expr
+expr3:
+    expr4
+|   expr4 relational_op expr4
     {
         $$ = &Binary{ $1, $2, $3 }
     }
+|   expr4 MATCH REGEXP
+    {
+        $$ = &Match{ $1, $3 }
+    }
+|   expr4 NONMATCH REGEXP
+    {
+        $$ = &Unary { "!", &Match{ $1, $3 }}
+    }
+    ;
 
 relational_op:
-    '=' '=' { $$ = "==" }
-|   '!' '=' { $$ = "!=" }
-|   '<' '=' { $$ = "<=" }
-|   '>' '=' { $$ = ">=" }
+    EQ
+|   NE
+|   LTE
+|   GTE
 |   '<'
 |   '>'
-|   '=' '~' { $$ = "=~" }
-|   '!' '~' { $$ = "!~" }
+    ;
 
-arithmethical:
-    expr arithmethical_op expr
+expr4:
+    expr5
+|   expr5 arithmethical_op expr5
     {
         $$ = &Binary{ $1, $2, $3 }
     }
+    ;
 
 arithmethical_op:
     '+'
@@ -209,60 +231,68 @@ arithmethical_op:
 |   '/'
 |   '%'
 |   '^'
+    ;
 
-function_call:
-    ID '(' ')'
-    {
-        $$ = &FuncCall { $1, nil }
-    }
-|   ID '(' function_args ')'
+expr5:
+    func_call
+|   attr_ref
+|   query_param
+|   literal
+|   parenthesis
+    ;
+
+func_call:
+    ID '(' func_args ')'
     {
         $$ = &FuncCall { $1, $3 }
     }
+    ;
 
-function_args:
-    expr
+func_args:
+    /* empty */
+    {
+        $$ = nil
+    }
+|   expr
     {
         $$ = []Expr { $1 }
     }
-|   function_args ',' expr
+|   func_args ',' expr
     {
         $$ = append($1, $3)
     }
+    ;
 
-attribute_ref:
-    '@' ID  { $$ = &Attr { $2 } }
-|   '@' STR { $$ = &Attr { $2 } }
+attr_ref:
+    '@' ID  { $$ = &WithAttr { $2 } }
+|   '@' STR { $$ = &WithAttr { $2 } }
+    ;
 
-query_parameter:
+query_param:
     '{' ID '}'
     {
-        $$ = &QueryParam{ $2 }
+        $$ = QueryParam($2)
     }
+    ;
 
 literal:
     STR     { $$ = Str($1) }
 |   NUM     { $$ = Num($1) }
+|   REGEXP  { $$ = $1 }
 |   value   { $$ = Keyword($1)}
+    ;
 
 value:
-    't' 'r' 'u' 'e'
-    {
-        $$ = "true"
-    }
-|   'f' 'a' 'l' 's' 'e'
-    {
-        $$ = "false"
-    }
-|   'n' 'u' 'l' 'l'
-    {
-        $$ = "null"
-    }
+    TRUE
+|   FALSE
+|   NULL
+    ;
 
 parenthesis:
     '(' expr ')'
     {
         $$ = $2
     }
+    ;
 
 %%

@@ -7,27 +7,44 @@ import __yyfmt__ "fmt"
 
 //line query.y:2
 
-//line query.y:6
+import (
+	"regexp"
+)
+
+//line query.y:9
 type querySymType struct {
-	yys     int
-	query   Query
-	path    Path
-	step    *Step
-	expr    Expr
-	args    []Expr
-	str     string
-	num     int
-	boolean bool
-	dir     AxisDirection
-	axis    *Axis
+	yys    int
+	query  Query
+	path   Path
+	axis   *Axis
+	step   *Step
+	expr   Expr
+	args   []Expr
+	regexp *regexp.Regexp
+	err    error
+	str    string
+	num    int64
 }
 
-const ID = 57346
-const STR = 57347
-const LAST = 57348
-const POSITION = 57349
-const NUM = 57350
-const BOOL = 57351
+const REGEXP = 57346
+const ERR = 57347
+const ID = 57348
+const STR = 57349
+const TRUE = 57350
+const FALSE = 57351
+const NULL = 57352
+const LSHIFT = 57353
+const RSHIFT = 57354
+const AND = 57355
+const OR = 57356
+const EQ = 57357
+const NE = 57358
+const LTE = 57359
+const GTE = 57360
+const MATCH = 57361
+const NONMATCH = 57362
+const ELSE_OR = 57363
+const NUM = 57364
 
 var queryToknames = [...]string{
 	"$end",
@@ -40,39 +57,41 @@ var queryToknames = [...]string{
 	"':'",
 	"'@'",
 	"'.'",
-	"'\"'",
-	"'~'",
-	"'='",
 	"','",
+	"REGEXP",
+	"ERR",
 	"ID",
 	"STR",
-	"LAST",
-	"POSITION",
+	"TRUE",
+	"FALSE",
+	"NULL",
 	"'+'",
 	"'-'",
 	"'*'",
 	"'/'",
 	"'^'",
 	"'%'",
-	"'&'",
-	"'|'",
 	"'>'",
 	"'<'",
 	"'!'",
-	"NUM",
-	"BOOL",
+	"'~'",
+	"'&'",
+	"'|'",
 	"'?'",
+	"LSHIFT",
+	"RSHIFT",
+	"AND",
+	"OR",
+	"EQ",
+	"NE",
+	"LTE",
+	"GTE",
+	"MATCH",
+	"NONMATCH",
+	"ELSE_OR",
+	"NUM",
 	"'{'",
 	"'}'",
-	"'t'",
-	"'r'",
-	"'u'",
-	"'e'",
-	"'f'",
-	"'a'",
-	"'l'",
-	"'s'",
-	"'n'",
 }
 var queryStatenames = [...]string{}
 
@@ -80,7 +99,7 @@ const queryEofCode = 1
 const queryErrCode = 2
 const queryInitialStackSize = 16
 
-//line query.y:268
+//line query.y:298
 
 //line yacctab:1
 var queryExca = [...]int{
@@ -91,133 +110,125 @@ var queryExca = [...]int{
 
 const queryPrivate = 57344
 
-const queryLast = 214
+const queryLast = 150
 
 var queryAct = [...]int{
 
-	35, 20, 129, 54, 116, 130, 49, 123, 122, 47,
-	96, 133, 48, 51, 128, 121, 97, 95, 4, 119,
-	111, 22, 19, 34, 22, 58, 46, 52, 107, 106,
-	50, 99, 55, 12, 110, 15, 56, 69, 7, 8,
-	57, 68, 14, 13, 9, 11, 59, 88, 89, 21,
-	17, 16, 19, 109, 67, 94, 54, 27, 101, 49,
-	66, 98, 47, 65, 64, 48, 51, 63, 108, 26,
-	32, 31, 100, 102, 103, 104, 105, 30, 29, 46,
-	52, 7, 8, 50, 28, 55, 25, 9, 3, 56,
-	93, 118, 18, 57, 54, 91, 92, 49, 61, 62,
-	47, 126, 125, 48, 51, 115, 114, 33, 127, 113,
-	112, 24, 5, 90, 22, 1, 6, 46, 52, 23,
-	10, 50, 53, 55, 124, 131, 75, 56, 132, 80,
-	74, 57, 73, 72, 60, 82, 83, 84, 85, 87,
-	86, 76, 77, 79, 78, 81, 120, 117, 71, 45,
-	44, 43, 80, 42, 41, 40, 39, 38, 82, 83,
-	84, 85, 87, 86, 76, 77, 79, 78, 81, 70,
-	37, 71, 36, 2, 0, 0, 0, 80, 0, 0,
-	0, 0, 0, 82, 83, 84, 85, 87, 86, 76,
-	77, 79, 78, 81, 80, 0, 71, 0, 0, 0,
-	82, 83, 84, 85, 87, 86, 76, 77, 79, 78,
-	81, 0, 0, 71,
+	36, 37, 43, 42, 40, 38, 20, 117, 79, 80,
+	56, 81, 82, 50, 72, 106, 54, 22, 49, 52,
+	57, 58, 59, 92, 91, 73, 75, 76, 35, 22,
+	60, 39, 41, 70, 87, 88, 89, 90, 85, 86,
+	61, 69, 28, 7, 8, 77, 83, 53, 51, 4,
+	9, 113, 21, 19, 27, 56, 68, 104, 50, 67,
+	66, 54, 65, 49, 52, 57, 58, 59, 105, 64,
+	33, 3, 32, 31, 107, 108, 30, 41, 29, 26,
+	109, 101, 102, 110, 19, 62, 63, 103, 111, 112,
+	34, 120, 53, 51, 56, 121, 114, 50, 18, 119,
+	54, 116, 49, 52, 57, 58, 59, 25, 12, 118,
+	100, 71, 7, 8, 22, 1, 55, 14, 13, 9,
+	11, 122, 123, 17, 16, 93, 15, 84, 78, 74,
+	24, 53, 51, 94, 95, 96, 97, 99, 98, 5,
+	10, 115, 48, 47, 46, 45, 23, 44, 6, 2,
 }
 var queryPact = [...]int{
 
-	23, -1000, 78, 23, -1000, 20, 66, -1000, -1000, -1000,
-	103, 64, 47, 62, 56, 55, 49, 48, 23, -1000,
-	-1000, 110, 88, 17, 83, -1000, 45, 42, 41, 38,
-	32, 19, 15, 23, -1000, 164, -1000, -1000, -1000, -1000,
-	-1000, -1000, -1000, -1000, -1000, -1000, 88, 88, 107, 80,
-	75, -1000, -1000, -1000, 88, -19, -30, -21, -1000, 110,
-	-1000, -1000, -1000, -1000, 9, -1000, -1000, -1000, -1000, -1000,
-	-1000, 50, 88, 88, 88, 88, 4, 2, 40, 7,
-	97, 93, -1000, -1000, -1000, -1000, -1000, -1000, 181, 181,
-	-3, -1000, -1000, -15, 139, -22, -33, -34, -1000, -1000,
-	116, 88, 181, 181, 181, 181, -1000, -1000, -1000, -1000,
-	-1000, -1000, -1000, -1000, -1000, -1000, -1000, 94, 181, -1000,
-	-1000, -24, -40, -36, 88, 181, -1000, 88, -1000, -27,
-	-1000, 181, 181, -1000,
+	98, -1000, 87, 98, -1000, 25, 29, -1000, -1000, -1000,
+	99, 57, 32, 56, 54, 51, 50, 48, 98, -1000,
+	-1000, 110, 4, 13, -1000, 71, -1000, 47, 40, 38,
+	37, 34, 19, 11, 98, -1000, 106, -17, -8, 49,
+	-21, 88, -2, 114, -1000, -1000, -1000, -1000, -1000, 104,
+	67, 73, -1000, -1000, -1000, -1000, 4, -1000, -1000, -1000,
+	-1000, 110, -1000, -1000, -1000, -7, -1000, -1000, -1000, -1000,
+	-1000, -1000, 4, 4, 49, -1000, -1000, -1000, 88, -1000,
+	-1000, -1000, -1000, -1000, 88, 77, 39, -1000, -1000, -1000,
+	-1000, -1000, -1000, 88, -1000, -1000, -1000, -1000, -1000, -1000,
+	4, -1000, -1000, -38, 102, -1000, -1000, 91, -1000, -1000,
+	-1000, -1000, -1000, -1000, -1000, 84, -1000, -1000, -1000, 4,
+	-1000, 4, -1000, -1000,
 }
 var queryPgo = [...]int{
 
-	0, 173, 88, 18, 1, 0, 172, 170, 157, 156,
-	155, 154, 153, 151, 150, 149, 147, 134, 112, 133,
-	132, 130, 126, 122, 120, 116, 115,
+	0, 149, 71, 148, 49, 6, 147, 145, 144, 143,
+	142, 0, 1, 5, 4, 3, 2, 141, 140, 130,
+	139, 129, 128, 127, 125, 116, 115,
 }
 var queryR1 = [...]int{
 
-	0, 26, 1, 1, 2, 2, 3, 3, 3, 3,
-	3, 3, 18, 18, 18, 4, 25, 25, 24, 24,
-	24, 24, 24, 24, 24, 24, 24, 24, 24, 24,
-	24, 24, 17, 17, 5, 5, 5, 5, 5, 5,
-	5, 5, 5, 5, 6, 6, 7, 7, 19, 19,
-	8, 8, 20, 20, 20, 20, 9, 21, 21, 21,
-	21, 21, 21, 21, 21, 10, 22, 22, 22, 22,
-	22, 22, 11, 11, 16, 16, 12, 12, 13, 14,
-	14, 14, 23, 23, 23, 15,
+	0, 26, 1, 1, 2, 2, 4, 4, 4, 4,
+	4, 4, 20, 20, 20, 5, 3, 3, 18, 18,
+	18, 18, 18, 18, 18, 18, 18, 18, 18, 18,
+	18, 18, 19, 19, 11, 11, 11, 12, 12, 12,
+	21, 21, 13, 13, 13, 22, 22, 22, 22, 14,
+	14, 14, 14, 23, 23, 23, 23, 23, 23, 15,
+	15, 24, 24, 24, 24, 24, 24, 16, 16, 16,
+	16, 16, 6, 17, 17, 17, 7, 7, 8, 9,
+	9, 9, 9, 25, 25, 25, 10,
 }
 var queryR2 = [...]int{
 
 	0, 1, 1, 3, 1, 2, 1, 2, 3, 2,
-	3, 4, 1, 1, 1, 3, 1, 3, 1, 2,
+	3, 4, 1, 1, 1, 3, 1, 2, 1, 2,
 	2, 3, 2, 3, 2, 3, 2, 3, 3, 4,
-	3, 3, 1, 1, 1, 1, 1, 1, 1, 1,
-	1, 1, 1, 1, 5, 4, 3, 2, 2, 2,
-	3, 2, 1, 1, 2, 2, 3, 2, 2, 2,
-	2, 1, 1, 2, 2, 3, 1, 1, 1, 1,
-	1, 1, 3, 4, 1, 3, 2, 2, 3, 1,
-	1, 1, 4, 5, 4, 3,
+	3, 3, 2, 2, 1, 5, 3, 1, 3, 2,
+	1, 1, 1, 3, 2, 1, 1, 1, 1, 1,
+	3, 3, 3, 1, 1, 1, 1, 1, 1, 1,
+	3, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+	1, 1, 4, 0, 1, 3, 2, 2, 3, 1,
+	1, 1, 1, 1, 1, 1, 3,
 }
 var queryChk = [...]int{
 
-	-1000, -26, -1, -2, -3, -18, -25, 15, 16, 21,
-	-24, 22, 10, 20, 19, 12, 28, 27, 14, -3,
-	-4, 29, 4, -18, 8, 22, 22, 10, 22, 22,
-	22, 22, 22, -2, -4, -5, -6, -7, -8, -9,
-	-10, -11, -12, -13, -14, -15, 29, 12, 15, 9,
-	33, 16, 30, -23, 6, 35, 39, 43, -4, 29,
-	-17, 15, 16, 22, 22, 22, 22, 22, 22, 22,
-	5, 32, -19, -20, -21, -22, 25, 26, 28, 27,
-	13, 29, 19, 20, 21, 22, 24, 23, -5, -5,
-	6, 15, 16, 15, -5, 36, 40, 37, -4, 22,
-	-5, 8, -5, -5, -5, -5, 25, 26, 28, 13,
-	27, 13, 13, 12, 13, 12, 7, -16, -5, 34,
-	7, 37, 41, 41, 8, -5, 7, 14, 38, 42,
-	41, -5, -5, 38,
+	-1000, -26, -1, -2, -4, -20, -3, 14, 15, 21,
+	-18, 22, 10, 20, 19, 28, 26, 25, 11, -4,
+	-5, 27, 4, -20, -19, 8, 22, 22, 10, 22,
+	22, 22, 22, 22, -2, -5, -11, -12, -13, 27,
+	-14, 28, -15, -16, -6, -7, -8, -9, -10, 14,
+	9, 44, 15, 43, 12, -25, 6, 16, 17, 18,
+	-5, 27, 14, 15, 22, 22, 22, 22, 22, 22,
+	22, 5, 31, 42, -21, 34, 35, -13, -22, 29,
+	30, 32, 33, -14, -23, 40, 41, 36, 37, 38,
+	39, 26, 25, -24, 19, 20, 21, 22, 24, 23,
+	6, 14, 15, 14, -11, -5, 22, -12, -12, -13,
+	-14, -15, 12, 12, -16, -17, -11, 45, 7, 8,
+	7, 11, -12, -11,
 }
 var queryDef = [...]int{
 
 	0, -2, 1, 2, 4, 6, 0, 12, 13, 14,
 	16, 18, 0, 0, 0, 0, 0, 0, 0, 5,
-	7, 0, 0, 9, 0, 19, 20, 0, 22, 24,
-	26, 0, 0, 3, 8, 0, 34, 35, 36, 37,
-	38, 39, 40, 41, 42, 43, 0, 0, 0, 0,
-	0, 79, 80, 81, 0, 0, 0, 0, 10, 0,
-	17, 32, 33, 21, 28, 23, 25, 27, 30, 31,
-	15, 0, 0, 0, 0, 0, 52, 53, 61, 62,
-	0, 0, 66, 67, 68, 69, 70, 71, 47, 51,
-	0, 76, 77, 0, 0, 0, 0, 0, 11, 29,
-	0, 0, 46, 50, 56, 65, 48, 49, 54, 59,
-	55, 60, 57, 63, 58, 64, 72, 0, 74, 78,
-	85, 0, 0, 0, 0, 45, 73, 0, 82, 0,
-	84, 44, 75, 83,
+	7, 0, 0, 9, 17, 0, 19, 20, 0, 22,
+	24, 26, 0, 0, 3, 8, 0, 34, 37, 0,
+	42, 0, 49, 59, 67, 68, 69, 70, 71, 0,
+	0, 0, 79, 80, 81, 82, 0, 83, 84, 85,
+	10, 0, 32, 33, 21, 28, 23, 25, 27, 30,
+	31, 15, 0, 0, 0, 40, 41, 39, 0, 45,
+	46, 47, 48, 44, 0, 0, 0, 53, 54, 55,
+	56, 57, 58, 0, 61, 62, 63, 64, 65, 66,
+	73, 76, 77, 0, 0, 11, 29, 0, 36, 38,
+	43, 50, 51, 52, 60, 0, 74, 78, 86, 0,
+	72, 0, 35, 75,
 }
 var queryTok1 = [...]int{
 
 	1, 3, 3, 3, 3, 3, 3, 3, 3, 3,
 	3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
 	3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
-	3, 3, 3, 29, 11, 3, 3, 24, 25, 3,
-	6, 7, 21, 19, 14, 20, 10, 22, 3, 3,
+	3, 3, 3, 27, 3, 3, 3, 24, 29, 3,
+	6, 7, 21, 19, 11, 20, 10, 22, 3, 3,
 	3, 3, 3, 3, 3, 3, 3, 3, 8, 3,
-	28, 13, 27, 32, 9, 3, 3, 3, 3, 3,
+	26, 3, 25, 31, 9, 3, 3, 3, 3, 3,
 	3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
 	3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
-	3, 4, 3, 5, 23, 3, 3, 40, 3, 3,
-	3, 38, 39, 3, 3, 3, 3, 3, 41, 3,
-	43, 3, 3, 3, 36, 42, 35, 37, 3, 3,
-	3, 3, 3, 33, 26, 34, 12,
+	3, 4, 3, 5, 23, 3, 3, 3, 3, 3,
+	3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
+	3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
+	3, 3, 3, 44, 30, 45, 28,
 }
 var queryTok2 = [...]int{
 
-	2, 3, 15, 16, 17, 18, 30, 31,
+	2, 3, 12, 13, 14, 15, 16, 17, 18, 32,
+	33, 34, 35, 36, 37, 38, 39, 40, 41, 42,
+	43,
 }
 var queryTok3 = [...]int{
 	0,
@@ -560,357 +571,315 @@ querydefault:
 	// dummy call; replaced with literal code
 	switch querynt {
 
-	case 2:
+	case 1:
 		queryDollar = queryS[querypt-1 : querypt+1]
 //line query.y:46
+		{
+			querylex.(*queryLexerImpl).result = queryDollar[1].query
+		}
+	case 2:
+		queryDollar = queryS[querypt-1 : querypt+1]
+//line query.y:53
 		{
 			queryVAL.query = Query{queryDollar[1].path}
 		}
 	case 3:
 		queryDollar = queryS[querypt-3 : querypt+1]
-//line query.y:50
+//line query.y:57
 		{
 			queryVAL.query = append(queryDollar[1].query, queryDollar[3].path)
 		}
 	case 4:
 		queryDollar = queryS[querypt-1 : querypt+1]
-//line query.y:56
+//line query.y:64
 		{
 			queryVAL.path = Path{queryDollar[1].step}
 		}
 	case 5:
 		queryDollar = queryS[querypt-2 : querypt+1]
-//line query.y:60
+//line query.y:68
 		{
 			queryVAL.path = append(queryDollar[1].path, queryDollar[2].step)
 		}
 	case 6:
 		queryDollar = queryS[querypt-1 : querypt+1]
-//line query.y:66
+//line query.y:75
 		{
 			queryVAL.step = &Step{Match: queryDollar[1].str}
 		}
 	case 7:
 		queryDollar = queryS[querypt-2 : querypt+1]
-//line query.y:70
+//line query.y:79
 		{
 			queryVAL.step = &Step{Match: queryDollar[1].str, Filter: queryDollar[2].expr}
 		}
 	case 8:
 		queryDollar = queryS[querypt-3 : querypt+1]
-//line query.y:74
+//line query.y:83
 		{
 			queryVAL.step = &Step{Match: queryDollar[1].str, Filter: queryDollar[3].expr}
 		}
 	case 9:
 		queryDollar = queryS[querypt-2 : querypt+1]
-//line query.y:78
+//line query.y:87
 		{
 			queryVAL.step = &Step{Axis: queryDollar[1].axis, Match: queryDollar[2].str}
 		}
 	case 10:
 		queryDollar = queryS[querypt-3 : querypt+1]
-//line query.y:82
+//line query.y:91
 		{
 			queryVAL.step = &Step{Axis: queryDollar[1].axis, Match: queryDollar[2].str, Filter: queryDollar[3].expr}
 		}
 	case 11:
 		queryDollar = queryS[querypt-4 : querypt+1]
-//line query.y:86
+//line query.y:95
 		{
 			queryVAL.step = &Step{Axis: queryDollar[1].axis, Match: queryDollar[2].str, Filter: queryDollar[4].expr}
 		}
 	case 15:
 		queryDollar = queryS[querypt-3 : querypt+1]
-//line query.y:97
+//line query.y:108
 		{
 			queryVAL.expr = queryDollar[2].expr
 		}
 	case 16:
 		queryDollar = queryS[querypt-1 : querypt+1]
-//line query.y:103
+//line query.y:115
 		{
-			queryVAL.axis = &Axis{Direction: queryDollar[1].dir}
+			queryVAL.axis = &Axis{Dir: queryDollar[1].str}
 		}
 	case 17:
-		queryDollar = queryS[querypt-3 : querypt+1]
-//line query.y:107
+		queryDollar = queryS[querypt-2 : querypt+1]
+//line query.y:119
 		{
-			queryVAL.axis = &Axis{queryDollar[1].dir, queryDollar[3].str}
+			queryVAL.axis = &Axis{queryDollar[1].str, queryDollar[2].str}
 		}
 	case 18:
 		queryDollar = queryS[querypt-1 : querypt+1]
-//line query.y:112
+//line query.y:125
 		{
-			queryVAL.dir = DirectChild
+			queryVAL.str = "/"
 		}
 	case 19:
 		queryDollar = queryS[querypt-2 : querypt+1]
-//line query.y:113
+//line query.y:126
 		{
-			queryVAL.dir = AnyDescendant
+			queryVAL.str = "//"
 		}
 	case 20:
 		queryDollar = queryS[querypt-2 : querypt+1]
-//line query.y:114
+//line query.y:127
 		{
-			queryVAL.dir = CurrentDirectChild
+			queryVAL.str = "./"
 		}
 	case 21:
 		queryDollar = queryS[querypt-3 : querypt+1]
-//line query.y:115
+//line query.y:128
 		{
-			queryVAL.dir = CurrentAnyDescendant
+			queryVAL.str = ".//"
 		}
 	case 22:
 		queryDollar = queryS[querypt-2 : querypt+1]
-//line query.y:116
+//line query.y:129
 		{
-			queryVAL.dir = DirectLeftSibling
+			queryVAL.str = "-/"
 		}
 	case 23:
 		queryDollar = queryS[querypt-3 : querypt+1]
-//line query.y:117
+//line query.y:130
 		{
-			queryVAL.dir = AnyLeftSibling
+			queryVAL.str = "-//"
 		}
 	case 24:
 		queryDollar = queryS[querypt-2 : querypt+1]
-//line query.y:118
+//line query.y:131
 		{
-			queryVAL.dir = DirectRightSibling
+			queryVAL.str = "+/"
 		}
 	case 25:
 		queryDollar = queryS[querypt-3 : querypt+1]
-//line query.y:119
+//line query.y:132
 		{
-			queryVAL.dir = AnyRightSibling
+			queryVAL.str = "+//"
 		}
 	case 26:
 		queryDollar = queryS[querypt-2 : querypt+1]
-//line query.y:120
+//line query.y:133
 		{
-			queryVAL.dir = DirectLeftAndRightSibling
+			queryVAL.str = "~/"
 		}
 	case 27:
 		queryDollar = queryS[querypt-3 : querypt+1]
-//line query.y:121
+//line query.y:134
 		{
-			queryVAL.dir = AnyLeftAndRightSibling
+			queryVAL.str = "~//"
 		}
 	case 28:
 		queryDollar = queryS[querypt-3 : querypt+1]
-//line query.y:122
+//line query.y:135
 		{
-			queryVAL.dir = DirectParent
+			queryVAL.str = "../"
 		}
 	case 29:
 		queryDollar = queryS[querypt-4 : querypt+1]
-//line query.y:123
+//line query.y:136
 		{
-			queryVAL.dir = AnyParent
+			queryVAL.str = "..//"
 		}
 	case 30:
 		queryDollar = queryS[querypt-3 : querypt+1]
-//line query.y:124
+//line query.y:137
 		{
-			queryVAL.dir = AnyPreceding
+			queryVAL.str = "<//"
 		}
 	case 31:
 		queryDollar = queryS[querypt-3 : querypt+1]
-//line query.y:125
+//line query.y:138
 		{
-			queryVAL.dir = AnyFollowing
+			queryVAL.str = ">//"
 		}
-	case 44:
+	case 32:
+		queryDollar = queryS[querypt-2 : querypt+1]
+//line query.y:142
+		{
+			queryVAL.str = queryDollar[2].str
+		}
+	case 33:
+		queryDollar = queryS[querypt-2 : querypt+1]
+//line query.y:143
+		{
+			queryVAL.str = queryDollar[2].str
+		}
+	case 35:
 		queryDollar = queryS[querypt-5 : querypt+1]
-//line query.y:145
-		{
-			queryVAL.expr = &Condition{queryDollar[1].expr, queryDollar[3].expr, queryDollar[5].expr}
-		}
-	case 45:
-		queryDollar = queryS[querypt-4 : querypt+1]
 //line query.y:149
 		{
-			queryVAL.expr = &Condition{queryDollar[1].expr, nil, queryDollar[4].expr}
+			queryVAL.expr = &Cond{queryDollar[1].expr, queryDollar[3].expr, queryDollar[5].expr}
 		}
-	case 46:
+	case 36:
 		queryDollar = queryS[querypt-3 : querypt+1]
-//line query.y:155
+//line query.y:153
+		{
+			queryVAL.expr = &Cond{queryDollar[1].expr, nil, queryDollar[3].expr}
+		}
+	case 38:
+		queryDollar = queryS[querypt-3 : querypt+1]
+//line query.y:161
 		{
 			queryVAL.expr = &Binary{queryDollar[1].expr, queryDollar[2].str, queryDollar[3].expr}
 		}
-	case 47:
-		queryDollar = queryS[querypt-2 : querypt+1]
-//line query.y:159
-		{
-			queryVAL.expr = &Unary{queryDollar[1].str, queryDollar[2].expr}
-		}
-	case 48:
-		queryDollar = queryS[querypt-2 : querypt+1]
-//line query.y:164
-		{
-			queryVAL.str = "&&"
-		}
-	case 49:
+	case 39:
 		queryDollar = queryS[querypt-2 : querypt+1]
 //line query.y:165
 		{
-			queryVAL.str = "||"
+			queryVAL.expr = &Unary{queryDollar[1].str, queryDollar[2].expr}
+		}
+	case 43:
+		queryDollar = queryS[querypt-3 : querypt+1]
+//line query.y:178
+		{
+			queryVAL.expr = &Binary{queryDollar[1].expr, queryDollar[2].str, queryDollar[3].expr}
+		}
+	case 44:
+		queryDollar = queryS[querypt-2 : querypt+1]
+//line query.y:182
+		{
+			queryVAL.expr = &Unary{queryDollar[1].str, queryDollar[2].expr}
 		}
 	case 50:
 		queryDollar = queryS[querypt-3 : querypt+1]
-//line query.y:169
+//line query.y:197
 		{
 			queryVAL.expr = &Binary{queryDollar[1].expr, queryDollar[2].str, queryDollar[3].expr}
 		}
 	case 51:
-		queryDollar = queryS[querypt-2 : querypt+1]
-//line query.y:173
-		{
-			queryVAL.expr = &Unary{queryDollar[1].str, queryDollar[2].expr}
-		}
-	case 54:
-		queryDollar = queryS[querypt-2 : querypt+1]
-//line query.y:180
-		{
-			queryVAL.str = "<<"
-		}
-	case 55:
-		queryDollar = queryS[querypt-2 : querypt+1]
-//line query.y:181
-		{
-			queryVAL.str = ">>"
-		}
-	case 56:
-		queryDollar = queryS[querypt-3 : querypt+1]
-//line query.y:185
-		{
-			queryVAL.expr = &Binary{queryDollar[1].expr, queryDollar[2].str, queryDollar[3].expr}
-		}
-	case 57:
-		queryDollar = queryS[querypt-2 : querypt+1]
-//line query.y:190
-		{
-			queryVAL.str = "=="
-		}
-	case 58:
-		queryDollar = queryS[querypt-2 : querypt+1]
-//line query.y:191
-		{
-			queryVAL.str = "!="
-		}
-	case 59:
-		queryDollar = queryS[querypt-2 : querypt+1]
-//line query.y:192
-		{
-			queryVAL.str = "<="
-		}
-	case 60:
-		queryDollar = queryS[querypt-2 : querypt+1]
-//line query.y:193
-		{
-			queryVAL.str = ">="
-		}
-	case 63:
-		queryDollar = queryS[querypt-2 : querypt+1]
-//line query.y:196
-		{
-			queryVAL.str = "=~"
-		}
-	case 64:
-		queryDollar = queryS[querypt-2 : querypt+1]
-//line query.y:197
-		{
-			queryVAL.str = "!~"
-		}
-	case 65:
 		queryDollar = queryS[querypt-3 : querypt+1]
 //line query.y:201
+		{
+			queryVAL.expr = &Match{queryDollar[1].expr, queryDollar[3].regexp}
+		}
+	case 52:
+		queryDollar = queryS[querypt-3 : querypt+1]
+//line query.y:205
+		{
+			queryVAL.expr = &Unary{"!", &Match{queryDollar[1].expr, queryDollar[3].regexp}}
+		}
+	case 60:
+		queryDollar = queryS[querypt-3 : querypt+1]
+//line query.y:222
 		{
 			queryVAL.expr = &Binary{queryDollar[1].expr, queryDollar[2].str, queryDollar[3].expr}
 		}
 	case 72:
-		queryDollar = queryS[querypt-3 : querypt+1]
-//line query.y:215
-		{
-			queryVAL.expr = &FuncCall{queryDollar[1].str, nil}
-		}
-	case 73:
 		queryDollar = queryS[querypt-4 : querypt+1]
-//line query.y:219
+//line query.y:246
 		{
 			queryVAL.expr = &FuncCall{queryDollar[1].str, queryDollar[3].args}
 		}
+	case 73:
+		queryDollar = queryS[querypt-0 : querypt+1]
+//line query.y:253
+		{
+			queryVAL.args = nil
+		}
 	case 74:
 		queryDollar = queryS[querypt-1 : querypt+1]
-//line query.y:225
+//line query.y:257
 		{
 			queryVAL.args = []Expr{queryDollar[1].expr}
 		}
 	case 75:
 		queryDollar = queryS[querypt-3 : querypt+1]
-//line query.y:229
+//line query.y:261
 		{
 			queryVAL.args = append(queryDollar[1].args, queryDollar[3].expr)
 		}
 	case 76:
 		queryDollar = queryS[querypt-2 : querypt+1]
-//line query.y:234
+//line query.y:267
 		{
-			queryVAL.expr = &Attr{queryDollar[2].str}
+			queryVAL.expr = &WithAttr{queryDollar[2].str}
 		}
 	case 77:
 		queryDollar = queryS[querypt-2 : querypt+1]
-//line query.y:235
+//line query.y:268
 		{
-			queryVAL.expr = &Attr{queryDollar[2].str}
+			queryVAL.expr = &WithAttr{queryDollar[2].str}
 		}
 	case 78:
 		queryDollar = queryS[querypt-3 : querypt+1]
-//line query.y:239
+//line query.y:273
 		{
-			queryVAL.expr = &QueryParam{queryDollar[2].str}
+			queryVAL.expr = QueryParam(queryDollar[2].str)
 		}
 	case 79:
 		queryDollar = queryS[querypt-1 : querypt+1]
-//line query.y:244
+//line query.y:279
 		{
 			queryVAL.expr = Str(queryDollar[1].str)
 		}
 	case 80:
 		queryDollar = queryS[querypt-1 : querypt+1]
-//line query.y:245
+//line query.y:280
 		{
 			queryVAL.expr = Num(queryDollar[1].num)
 		}
 	case 81:
 		queryDollar = queryS[querypt-1 : querypt+1]
-//line query.y:246
+//line query.y:281
+		{
+			queryVAL.expr = queryDollar[1].regexp
+		}
+	case 82:
+		queryDollar = queryS[querypt-1 : querypt+1]
+//line query.y:282
 		{
 			queryVAL.expr = Keyword(queryDollar[1].str)
 		}
-	case 82:
-		queryDollar = queryS[querypt-4 : querypt+1]
-//line query.y:250
-		{
-			queryVAL.str = "true"
-		}
-	case 83:
-		queryDollar = queryS[querypt-5 : querypt+1]
-//line query.y:254
-		{
-			queryVAL.str = "false"
-		}
-	case 84:
-		queryDollar = queryS[querypt-4 : querypt+1]
-//line query.y:258
-		{
-			queryVAL.str = "null"
-		}
-	case 85:
+	case 86:
 		queryDollar = queryS[querypt-3 : querypt+1]
-//line query.y:264
+//line query.y:293
 		{
 			queryVAL.expr = queryDollar[2].expr
 		}
