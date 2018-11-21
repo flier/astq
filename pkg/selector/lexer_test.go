@@ -2,6 +2,7 @@ package selector
 
 import (
 	"bytes"
+	"strconv"
 	"testing"
 
 	. "github.com/smartystreets/goconvey/convey"
@@ -34,7 +35,7 @@ var operators = map[int]string{
 
 var strs = map[string]string{
 	"hello world":                     "hello world",
-	"\a\b\f\n\r\t\v\\'\"\x20\xFF\123": `\a\b\f\n\r\t\v\\\'\"\x20\xfF\123`,
+	"\a\b\f\n\r\t\v\\'\"\x20\x3F\123": `\a\b\f\n\r\t\v\\\'\"\x20\x3F\123`,
 	"\u0020\u0020":                    `\u0020\U00000020`,
 	"汉字":                              `汉字`,
 }
@@ -76,49 +77,49 @@ func TestLexer(t *testing.T) {
 				buf.WriteString(`"` + escaped + `"`)
 
 				So(lexer.Lex(lval), ShouldEqual, STR)
-				So(lval.str, ShouldEqual, s)
+				So(strconv.Quote(lval.str), ShouldEqual, strconv.Quote(s))
 			}
 
 			Convey("When parse an incomplete string", func() {
 				buf.WriteString(`"hello`)
 
 				So(lexer.Lex(lval), ShouldEqual, ERR)
-				So(lval.err, ShouldEqual, errSyntax)
+				So(lval.err.Error(), ShouldEqual, "incomplete string: \"hello\"")
 			})
 
 			Convey("When parse a wrong escaped char", func() {
 				buf.WriteString(`"\kkk"`)
 
 				So(lexer.Lex(lval), ShouldEqual, ERR)
-				So(lval.err, ShouldEqual, errSyntax)
+				So(lval.err.Error(), ShouldEqual, "unexpected escaped char: 'k'")
 			})
 
 			Convey("When parse a wrong escaped hex char", func() {
 				buf.WriteString(`"\xKK"`)
 
 				So(lexer.Lex(lval), ShouldEqual, ERR)
-				So(lval.err, ShouldEqual, errSyntax)
+				So(lval.err.Error(), ShouldEqual, "invalid hex char: 'K'")
 			})
 
 			Convey("When parse a wrong escaped oct char", func() {
 				buf.WriteString(`"\788"`)
 
 				So(lexer.Lex(lval), ShouldEqual, ERR)
-				So(lval.err, ShouldEqual, errSyntax)
+				So(lval.err.Error(), ShouldEqual, "invalid octal digit: '8'")
 			})
 
 			Convey("When parse a wrong too large oct char", func() {
 				buf.WriteString(`"\777"`)
 
 				So(lexer.Lex(lval), ShouldEqual, ERR)
-				So(lval.err, ShouldEqual, errSyntax)
+				So(lval.err.Error(), ShouldEqual, "invalid octal value: 511")
 			})
 
 			Convey("When parse a wrong escaped rune", func() {
 				buf.WriteString(`"\U00110000"`)
 
 				So(lexer.Lex(lval), ShouldEqual, ERR)
-				So(lval.err, ShouldEqual, errSyntax)
+				So(lval.err.Error(), ShouldEqual, "invalid UNICODE rune: '\\U00110000'")
 			})
 		})
 
@@ -134,7 +135,7 @@ func TestLexer(t *testing.T) {
 				buf.WriteString("`hello")
 
 				So(lexer.Lex(lval), ShouldEqual, ERR)
-				So(lval.err, ShouldEqual, errSyntax)
+				So(lval.err.Error(), ShouldEqual, "incomplete regex: `hello`")
 			})
 		})
 

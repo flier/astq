@@ -81,7 +81,7 @@ step:
     }
 |   match '!' filter
     {
-        $$ = &Step { Match: $1, Filter: $3 }
+        $$ = &Step { Match: $1, Result: true, Filter: $3 }
     }
 |   axis match
     {
@@ -93,7 +93,7 @@ step:
     }
 |   axis match '!' filter
     {
-        $$ = &Step { Axis: $1, Match: $2, Filter: $4 }
+        $$ = &Step { Axis: $1, Match: $2, Result: true, Filter: $4 }
     }
     ;
 

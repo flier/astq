@@ -16,8 +16,6 @@ import (
 
 const eof = 0
 
-var errSyntax = errors.New("syntax error")
-
 type queryLexerImpl struct {
 	*bufio.Reader
 	result Query
@@ -208,13 +206,14 @@ func (l *queryLexerImpl) id() string {
 
 	var c rune
 
+L:
 	for {
 		c = l.next()
 
 		if unicode.IsLetter(c) || unicode.IsDigit(c) || c == '_' {
 			buf.WriteRune(c)
 		} else {
-			break
+			break L
 		}
 	}
 
@@ -232,11 +231,12 @@ L:
 	for {
 		switch c := l.next(); {
 		case c == eof:
+			err = fmt.Errorf("incomplete string: \"%s\"", buf.String())
 			break L
 
 		case c == '"':
 			s = buf.String()
-			return
+			break L
 
 		case c == '\\':
 			switch c = l.next(); c {
@@ -275,9 +275,11 @@ L:
 				var v int
 
 				for i := 0; i < n; i++ {
-					n, ok := unhex(l.next())
+					c = l.next()
+					n, ok := unhex(c)
 
 					if !ok {
+						err = fmt.Errorf("invalid hex char: '%c'", c)
 						break L
 					}
 
@@ -288,6 +290,7 @@ L:
 					buf.WriteByte(byte(v))
 				} else {
 					if v > utf8.MaxRune {
+						err = fmt.Errorf("invalid UNICODE rune: '\\U%08x'", v)
 						break L
 					}
 
@@ -302,6 +305,7 @@ L:
 					n := c - '0'
 
 					if n < 0 || n > 7 {
+						err = fmt.Errorf("invalid octal digit: '%c'", c)
 						break L
 					}
 
@@ -309,11 +313,13 @@ L:
 				}
 
 				if v > 255 {
+					err = fmt.Errorf("invalid octal value: %d", v)
 					break L
 				}
 
 				buf.WriteRune(v)
 			default:
+				err = fmt.Errorf("unexpected escaped char: '%c'", c)
 				break L
 			}
 		default:
@@ -321,7 +327,6 @@ L:
 		}
 	}
 
-	err = errSyntax
 	return
 }
 
@@ -344,6 +349,7 @@ L:
 	for {
 		switch c := l.next(); c {
 		case eof:
+			err = fmt.Errorf("incomplete regex: `%s`", buf.String())
 			break L
 
 		case '`':
@@ -354,6 +360,5 @@ L:
 		}
 	}
 
-	err = errSyntax
 	return
 }

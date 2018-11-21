@@ -617,7 +617,7 @@ querydefault:
 		queryDollar = queryS[querypt-3 : querypt+1]
 //line query.y:83
 		{
-			queryVAL.step = &Step{Match: queryDollar[1].str, Filter: queryDollar[3].expr}
+			queryVAL.step = &Step{Match: queryDollar[1].str, Result: true, Filter: queryDollar[3].expr}
 		}
 	case 9:
 		queryDollar = queryS[querypt-2 : querypt+1]
@@ -635,7 +635,7 @@ querydefault:
 		queryDollar = queryS[querypt-4 : querypt+1]
 //line query.y:95
 		{
-			queryVAL.step = &Step{Axis: queryDollar[1].axis, Match: queryDollar[2].str, Filter: queryDollar[4].expr}
+			queryVAL.step = &Step{Axis: queryDollar[1].axis, Match: queryDollar[2].str, Result: true, Filter: queryDollar[4].expr}
 		}
 	case 15:
 		queryDollar = queryS[querypt-3 : querypt+1]
