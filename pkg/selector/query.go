@@ -7,11 +7,7 @@ import __yyfmt__ "fmt"
 
 //line query.y:2
 
-import (
-	"regexp"
-)
-
-//line query.y:9
+//line query.y:5
 type querySymType struct {
 	yys    int
 	query  Query
@@ -20,7 +16,7 @@ type querySymType struct {
 	step   *Step
 	expr   Expr
 	args   []Expr
-	regexp *regexp.Regexp
+	regexp *Regexp
 	err    error
 	str    string
 	num    int64
@@ -99,7 +95,7 @@ const queryEofCode = 1
 const queryErrCode = 2
 const queryInitialStackSize = 16
 
-//line query.y:298
+//line query.y:294
 
 //line yacctab:1
 var queryExca = [...]int{
@@ -116,7 +112,7 @@ var queryAct = [...]int{
 
 	36, 37, 43, 42, 40, 38, 20, 117, 79, 80,
 	56, 81, 82, 50, 72, 106, 54, 22, 49, 52,
-	57, 58, 59, 92, 91, 73, 75, 76, 35, 22,
+	57, 58, 59, 92, 91, 73, 76, 75, 35, 22,
 	60, 39, 41, 70, 87, 88, 89, 90, 85, 86,
 	61, 69, 28, 7, 8, 77, 83, 53, 51, 4,
 	9, 113, 21, 19, 27, 56, 68, 104, 50, 67,
@@ -185,7 +181,7 @@ var queryChk = [...]int{
 	-14, 28, -15, -16, -6, -7, -8, -9, -10, 14,
 	9, 44, 15, 43, 12, -25, 6, 16, 17, 18,
 	-5, 27, 14, 15, 22, 22, 22, 22, 22, 22,
-	22, 5, 31, 42, -21, 34, 35, -13, -22, 29,
+	22, 5, 31, 42, -21, 35, 34, -13, -22, 29,
 	30, 32, 33, -14, -23, 40, 41, 36, 37, 38,
 	39, 26, 25, -24, 19, 20, 21, 22, 24, 23,
 	6, 14, 15, 14, -11, -5, 22, -12, -12, -13,
@@ -573,313 +569,313 @@ querydefault:
 
 	case 1:
 		queryDollar = queryS[querypt-1 : querypt+1]
-//line query.y:46
+//line query.y:42
 		{
 			querylex.(*queryLexerImpl).result = queryDollar[1].query
 		}
 	case 2:
 		queryDollar = queryS[querypt-1 : querypt+1]
-//line query.y:53
+//line query.y:49
 		{
 			queryVAL.query = Query{queryDollar[1].path}
 		}
 	case 3:
 		queryDollar = queryS[querypt-3 : querypt+1]
-//line query.y:57
+//line query.y:53
 		{
 			queryVAL.query = append(queryDollar[1].query, queryDollar[3].path)
 		}
 	case 4:
 		queryDollar = queryS[querypt-1 : querypt+1]
-//line query.y:64
+//line query.y:60
 		{
 			queryVAL.path = Path{queryDollar[1].step}
 		}
 	case 5:
 		queryDollar = queryS[querypt-2 : querypt+1]
-//line query.y:68
+//line query.y:64
 		{
 			queryVAL.path = append(queryDollar[1].path, queryDollar[2].step)
 		}
 	case 6:
 		queryDollar = queryS[querypt-1 : querypt+1]
-//line query.y:75
+//line query.y:71
 		{
 			queryVAL.step = &Step{Match: queryDollar[1].str}
 		}
 	case 7:
 		queryDollar = queryS[querypt-2 : querypt+1]
-//line query.y:79
+//line query.y:75
 		{
 			queryVAL.step = &Step{Match: queryDollar[1].str, Filter: queryDollar[2].expr}
 		}
 	case 8:
 		queryDollar = queryS[querypt-3 : querypt+1]
-//line query.y:83
+//line query.y:79
 		{
 			queryVAL.step = &Step{Match: queryDollar[1].str, Result: true, Filter: queryDollar[3].expr}
 		}
 	case 9:
 		queryDollar = queryS[querypt-2 : querypt+1]
-//line query.y:87
+//line query.y:83
 		{
 			queryVAL.step = &Step{Axis: queryDollar[1].axis, Match: queryDollar[2].str}
 		}
 	case 10:
 		queryDollar = queryS[querypt-3 : querypt+1]
-//line query.y:91
+//line query.y:87
 		{
 			queryVAL.step = &Step{Axis: queryDollar[1].axis, Match: queryDollar[2].str, Filter: queryDollar[3].expr}
 		}
 	case 11:
 		queryDollar = queryS[querypt-4 : querypt+1]
-//line query.y:95
+//line query.y:91
 		{
 			queryVAL.step = &Step{Axis: queryDollar[1].axis, Match: queryDollar[2].str, Result: true, Filter: queryDollar[4].expr}
 		}
 	case 15:
 		queryDollar = queryS[querypt-3 : querypt+1]
-//line query.y:108
+//line query.y:104
 		{
 			queryVAL.expr = queryDollar[2].expr
 		}
 	case 16:
 		queryDollar = queryS[querypt-1 : querypt+1]
-//line query.y:115
+//line query.y:111
 		{
 			queryVAL.axis = &Axis{Dir: queryDollar[1].str}
 		}
 	case 17:
 		queryDollar = queryS[querypt-2 : querypt+1]
-//line query.y:119
+//line query.y:115
 		{
 			queryVAL.axis = &Axis{queryDollar[1].str, queryDollar[2].str}
 		}
 	case 18:
 		queryDollar = queryS[querypt-1 : querypt+1]
-//line query.y:125
+//line query.y:121
 		{
 			queryVAL.str = "/"
 		}
 	case 19:
 		queryDollar = queryS[querypt-2 : querypt+1]
-//line query.y:126
+//line query.y:122
 		{
 			queryVAL.str = "//"
 		}
 	case 20:
 		queryDollar = queryS[querypt-2 : querypt+1]
-//line query.y:127
+//line query.y:123
 		{
 			queryVAL.str = "./"
 		}
 	case 21:
 		queryDollar = queryS[querypt-3 : querypt+1]
-//line query.y:128
+//line query.y:124
 		{
 			queryVAL.str = ".//"
 		}
 	case 22:
 		queryDollar = queryS[querypt-2 : querypt+1]
-//line query.y:129
+//line query.y:125
 		{
 			queryVAL.str = "-/"
 		}
 	case 23:
 		queryDollar = queryS[querypt-3 : querypt+1]
-//line query.y:130
+//line query.y:126
 		{
 			queryVAL.str = "-//"
 		}
 	case 24:
 		queryDollar = queryS[querypt-2 : querypt+1]
-//line query.y:131
+//line query.y:127
 		{
 			queryVAL.str = "+/"
 		}
 	case 25:
 		queryDollar = queryS[querypt-3 : querypt+1]
-//line query.y:132
+//line query.y:128
 		{
 			queryVAL.str = "+//"
 		}
 	case 26:
 		queryDollar = queryS[querypt-2 : querypt+1]
-//line query.y:133
+//line query.y:129
 		{
 			queryVAL.str = "~/"
 		}
 	case 27:
 		queryDollar = queryS[querypt-3 : querypt+1]
-//line query.y:134
+//line query.y:130
 		{
 			queryVAL.str = "~//"
 		}
 	case 28:
 		queryDollar = queryS[querypt-3 : querypt+1]
-//line query.y:135
+//line query.y:131
 		{
 			queryVAL.str = "../"
 		}
 	case 29:
 		queryDollar = queryS[querypt-4 : querypt+1]
-//line query.y:136
+//line query.y:132
 		{
 			queryVAL.str = "..//"
 		}
 	case 30:
 		queryDollar = queryS[querypt-3 : querypt+1]
-//line query.y:137
+//line query.y:133
 		{
 			queryVAL.str = "<//"
 		}
 	case 31:
 		queryDollar = queryS[querypt-3 : querypt+1]
-//line query.y:138
+//line query.y:134
 		{
 			queryVAL.str = ">//"
 		}
 	case 32:
 		queryDollar = queryS[querypt-2 : querypt+1]
-//line query.y:142
+//line query.y:138
 		{
 			queryVAL.str = queryDollar[2].str
 		}
 	case 33:
 		queryDollar = queryS[querypt-2 : querypt+1]
-//line query.y:143
+//line query.y:139
 		{
 			queryVAL.str = queryDollar[2].str
 		}
 	case 35:
 		queryDollar = queryS[querypt-5 : querypt+1]
-//line query.y:149
+//line query.y:145
 		{
 			queryVAL.expr = &Cond{queryDollar[1].expr, queryDollar[3].expr, queryDollar[5].expr}
 		}
 	case 36:
 		queryDollar = queryS[querypt-3 : querypt+1]
-//line query.y:153
+//line query.y:149
 		{
 			queryVAL.expr = &Cond{queryDollar[1].expr, nil, queryDollar[3].expr}
 		}
 	case 38:
 		queryDollar = queryS[querypt-3 : querypt+1]
-//line query.y:161
+//line query.y:157
 		{
 			queryVAL.expr = &Binary{queryDollar[1].expr, queryDollar[2].str, queryDollar[3].expr}
 		}
 	case 39:
 		queryDollar = queryS[querypt-2 : querypt+1]
-//line query.y:165
+//line query.y:161
 		{
 			queryVAL.expr = &Unary{queryDollar[1].str, queryDollar[2].expr}
 		}
 	case 43:
 		queryDollar = queryS[querypt-3 : querypt+1]
-//line query.y:178
+//line query.y:174
 		{
 			queryVAL.expr = &Binary{queryDollar[1].expr, queryDollar[2].str, queryDollar[3].expr}
 		}
 	case 44:
 		queryDollar = queryS[querypt-2 : querypt+1]
-//line query.y:182
+//line query.y:178
 		{
 			queryVAL.expr = &Unary{queryDollar[1].str, queryDollar[2].expr}
 		}
 	case 50:
 		queryDollar = queryS[querypt-3 : querypt+1]
-//line query.y:197
+//line query.y:193
 		{
 			queryVAL.expr = &Binary{queryDollar[1].expr, queryDollar[2].str, queryDollar[3].expr}
 		}
 	case 51:
 		queryDollar = queryS[querypt-3 : querypt+1]
-//line query.y:201
+//line query.y:197
 		{
-			queryVAL.expr = &Match{queryDollar[1].expr, queryDollar[3].regexp}
+			queryVAL.expr = &Binary{queryDollar[1].expr, queryDollar[2].str, queryDollar[3].regexp}
 		}
 	case 52:
 		queryDollar = queryS[querypt-3 : querypt+1]
-//line query.y:205
+//line query.y:201
 		{
-			queryVAL.expr = &Unary{"!", &Match{queryDollar[1].expr, queryDollar[3].regexp}}
+			queryVAL.expr = &Binary{queryDollar[1].expr, queryDollar[2].str, queryDollar[3].regexp}
 		}
 	case 60:
 		queryDollar = queryS[querypt-3 : querypt+1]
-//line query.y:222
+//line query.y:218
 		{
 			queryVAL.expr = &Binary{queryDollar[1].expr, queryDollar[2].str, queryDollar[3].expr}
 		}
 	case 72:
 		queryDollar = queryS[querypt-4 : querypt+1]
-//line query.y:246
+//line query.y:242
 		{
 			queryVAL.expr = &FuncCall{queryDollar[1].str, queryDollar[3].args}
 		}
 	case 73:
 		queryDollar = queryS[querypt-0 : querypt+1]
-//line query.y:253
+//line query.y:249
 		{
 			queryVAL.args = nil
 		}
 	case 74:
 		queryDollar = queryS[querypt-1 : querypt+1]
-//line query.y:257
+//line query.y:253
 		{
 			queryVAL.args = []Expr{queryDollar[1].expr}
 		}
 	case 75:
 		queryDollar = queryS[querypt-3 : querypt+1]
-//line query.y:261
+//line query.y:257
 		{
 			queryVAL.args = append(queryDollar[1].args, queryDollar[3].expr)
 		}
 	case 76:
 		queryDollar = queryS[querypt-2 : querypt+1]
-//line query.y:267
+//line query.y:263
 		{
 			queryVAL.expr = &WithAttr{queryDollar[2].str}
 		}
 	case 77:
 		queryDollar = queryS[querypt-2 : querypt+1]
-//line query.y:268
+//line query.y:264
 		{
 			queryVAL.expr = &WithAttr{queryDollar[2].str}
 		}
 	case 78:
 		queryDollar = queryS[querypt-3 : querypt+1]
-//line query.y:273
+//line query.y:269
 		{
 			queryVAL.expr = QueryParam(queryDollar[2].str)
 		}
 	case 79:
 		queryDollar = queryS[querypt-1 : querypt+1]
-//line query.y:279
+//line query.y:275
 		{
 			queryVAL.expr = Str(queryDollar[1].str)
 		}
 	case 80:
 		queryDollar = queryS[querypt-1 : querypt+1]
-//line query.y:280
+//line query.y:276
 		{
 			queryVAL.expr = Num(queryDollar[1].num)
 		}
 	case 81:
 		queryDollar = queryS[querypt-1 : querypt+1]
-//line query.y:281
+//line query.y:277
 		{
 			queryVAL.expr = queryDollar[1].regexp
 		}
 	case 82:
 		queryDollar = queryS[querypt-1 : querypt+1]
-//line query.y:282
+//line query.y:278
 		{
 			queryVAL.expr = Keyword(queryDollar[1].str)
 		}
 	case 86:
 		queryDollar = queryS[querypt-3 : querypt+1]
-//line query.y:293
+//line query.y:289
 		{
 			queryVAL.expr = queryDollar[2].expr
 		}

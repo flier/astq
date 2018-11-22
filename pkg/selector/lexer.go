@@ -49,8 +49,10 @@ func (l *queryLexerImpl) Lex(lval *querySymType) int {
 		case '<':
 			switch l.next() {
 			case '<':
+				lval.str = "<<"
 				return LSHIFT
 			case '=':
+				lval.str = "<="
 				return LTE
 			case eof:
 			default:
@@ -60,8 +62,10 @@ func (l *queryLexerImpl) Lex(lval *querySymType) int {
 		case '>':
 			switch l.next() {
 			case '>':
+				lval.str = ">>"
 				return RSHIFT
 			case '=':
+				lval.str = ">="
 				return GTE
 			case eof:
 			default:
@@ -71,6 +75,7 @@ func (l *queryLexerImpl) Lex(lval *querySymType) int {
 		case '&':
 			switch l.next() {
 			case '&':
+				lval.str = "&&"
 				return AND
 			case eof:
 			default:
@@ -80,6 +85,7 @@ func (l *queryLexerImpl) Lex(lval *querySymType) int {
 		case '|':
 			switch l.next() {
 			case '|':
+				lval.str = "||"
 				return OR
 			case eof:
 
@@ -90,8 +96,10 @@ func (l *queryLexerImpl) Lex(lval *querySymType) int {
 		case '=':
 			switch l.next() {
 			case '=':
+				lval.str = "=="
 				return EQ
 			case '~':
+				lval.str = "=~"
 				return MATCH
 			case eof:
 			default:
@@ -101,8 +109,10 @@ func (l *queryLexerImpl) Lex(lval *querySymType) int {
 		case '!':
 			switch l.next() {
 			case '=':
+				lval.str = "!="
 				return NE
 			case '~':
+				lval.str = "!~"
 				return NONMATCH
 			case eof:
 			default:
@@ -112,6 +122,7 @@ func (l *queryLexerImpl) Lex(lval *querySymType) int {
 		case '?':
 			switch l.next() {
 			case ':':
+				lval.str = "?:"
 				return ELSE_OR
 			case eof:
 			default:
@@ -342,7 +353,7 @@ func unhex(c rune) (v int, ok bool) {
 	return
 }
 
-func (l *queryLexerImpl) regexp() (re *regexp.Regexp, err error) {
+func (l *queryLexerImpl) regexp() (re *Regexp, err error) {
 	buf := new(bytes.Buffer)
 
 L:
@@ -353,7 +364,13 @@ L:
 			break L
 
 		case '`':
-			return regexp.Compile(buf.String())
+			r, err := regexp.Compile(buf.String())
+
+			if err != nil {
+				return nil, err
+			}
+
+			return &Regexp{r}, nil
 
 		default:
 			buf.WriteRune(c)

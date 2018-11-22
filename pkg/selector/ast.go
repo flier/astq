@@ -126,6 +126,37 @@ type Binary struct {
 	Rhs Expr
 }
 
+func (b *Binary) IsLogical() bool {
+	return b.Op == "&&" || b.Op == "||"
+}
+
+func (b *Binary) IsBitwise() bool {
+	switch b.Op {
+	case "&", "|", "<<", ">>":
+		return true
+	default:
+		return false
+	}
+}
+
+func (b *Binary) IsRelational() bool {
+	switch b.Op {
+	case "==", "!=", ">", ">=", "<", "<=":
+		return true
+	default:
+		return false
+	}
+}
+
+func (b *Binary) IsArithmethical() bool {
+	switch b.Op {
+	case "+", "-", "*", "/", "%", "^":
+		return true
+	default:
+		return false
+	}
+}
+
 func (b *Binary) String() string {
 	return fmt.Sprintf("%s %s %s", b.Lhs, b.Op, b.Rhs)
 }
@@ -145,15 +176,6 @@ func (c *FuncCall) String() string {
 	return fmt.Sprintf("%s(%s)", c.ID, strings.Join(args, ", "))
 }
 
-type Match struct {
-	Expr
-	*regexp.Regexp
-}
-
-func (m *Match) String() string {
-	return fmt.Sprintf("%s =~ `%s`", m.Expr, m.Regexp)
-}
-
 type WithAttr struct {
 	ID string
 }
@@ -162,10 +184,18 @@ func (a *WithAttr) String() string {
 	return "@" + a.ID
 }
 
+type Regexp struct {
+	*regexp.Regexp
+}
+
+func (r *Regexp) String() string {
+	return "`" + r.Regexp.String() + "`"
+}
+
 type Str string
 
 func (s Str) String() string {
-	return string(s)
+	return `"` + string(s) + `"`
 }
 
 type Num int64

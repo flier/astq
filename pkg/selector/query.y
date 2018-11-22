@@ -1,9 +1,5 @@
 %{
 package selector
-
-import (
-    "regexp"
-)
 %}
 
 %union {
@@ -13,7 +9,7 @@ import (
     step *Step
     expr Expr
     args []Expr
-    regexp *regexp.Regexp
+    regexp *Regexp
     err error
     str string
     num int64
@@ -168,8 +164,8 @@ expr1:
     ;
 
 logical_op:
-    AND
-|   OR
+    OR
+|   AND
     ;
 
 expr2:
@@ -199,11 +195,11 @@ expr3:
     }
 |   expr4 MATCH REGEXP
     {
-        $$ = &Match{ $1, $3 }
+        $$ = &Binary{ $1, $2, $3 }
     }
 |   expr4 NONMATCH REGEXP
     {
-        $$ = &Unary { "!", &Match{ $1, $3 }}
+        $$ = &Binary{ $1, $2, $3 }
     }
     ;
 
